@@ -34,24 +34,9 @@ begin
 end;
 
 function Process(e: IInterface): integer;
-var
-	i: integer;
-	cobj, refBy, bnam: IInterface;
 begin
-	// Go through all of the Referenced By until you find the crafting (not tempering) recipe
-	for i := 0 to ReferencedByCount(e) - 1 do begin
-		refBy := ObjectToElement(ReferencedByIndex(e, i));
-		if Signature(refBy) = 'COBJ' then begin
-			bnam := LinksTo(ElementByPath(refBy, 'BNAM'));
-			if (geev(bnam, 'EDID') = 'CraftingSmithingForge') or (geev(bnam, 'EDID') = 'CraftingTanningRack') then begin;
-				cobj := refBy;
-				break;
-			end;
-		end;
-	end;
-
-	// Add the armor's EDID and the crafting recipe (if one was found) to the list
-	slCobj.AddObject(geev(e, 'EDID'), TObject(cobj));
+	// Add the armor's EDID and reference to the list
+	slCobj.AddObject(geev(e, 'EDID'), e);
 	AddMessage('    Loading '+slCobj[slCobj.Count - 1]);
 end;
 
@@ -61,7 +46,7 @@ var
 	armorRating: double;
 	armorTypeSet: bool;
 	armorType, itemID, itemName: string;
-	cobj, cnam, items, li, item: IInterface;
+	cobj, cnam, items, li, item, refBy, bnam: IInterface;
 	slIngredients, slIngredientNames, slOutput: TStringList;
 begin
 	slIngredients := TStringList.Create;
@@ -70,14 +55,34 @@ begin
 	armorRating := 0;
 	armorTypeSet := False;
 
-	// Go through every recipe
+	// Go through every armor piece
 	for i := 0 to slCobj.Count - 1 do begin
-		cobj := ObjectToElement(slCobj.Objects[i]);
-		cnam := LinksTo(ElementByPath(cobj, 'CNAM'));
-		items := ElementByPath(cobj, 'Items');
-		if not Assigned(cnam) then Continue;
-
+		cnam := ObjectToElement(slCobj.Objects[i]);
 		AddMessage('    Processing '+slCobj[i]);
+		
+		// Increase the armor rating by the amount of the resulting armor
+		armorRating := armorRating + geev(cnam, 'DNAM');
+		if not armorTypeSet then begin
+			// The armor type and thus calculated level will be based off the first armor encountered
+			armorType := geev(cnam, 'BOD2\Armor Type');
+			if (armorType = 'Light Armor') or (armorType = 'Heavy Armor') then
+				armorTypeSet := True
+		end;
+		
+		// Go through all of the Referenced By until you find the crafting (not tempering) recipe
+		for i := 0 to ReferencedByCount(cnam) - 1 do begin
+			refBy := ObjectToElement(ReferencedByIndex(cnam, i));
+			if Signature(refBy) = 'COBJ' then begin
+				bnam := LinksTo(ElementByPath(refBy, 'BNAM'));
+				if (geev(bnam, 'EDID') = 'CraftingSmithingForge') or (geev(bnam, 'EDID') = 'CraftingTanningRack') then begin;
+					cobj := refBy;
+					break;
+				end;
+			end;
+		end;
+	
+		if not Assigned(cobj) then Continue;
+		items := ElementByPath(cobj, 'Items');
 		
 		// Add every crafting ingredient to the ingredients list
 		for j := 0 to ElementCount(items) - 1 do begin
@@ -96,14 +101,6 @@ begin
 				slIngredients.AddObject(itemID, TObject(count));
 				slIngredientNames.Add(itemName);
 			end;
-		end;
-		
-		// Increase the armor rating by the amount of the resulting armor
-		armorRating := armorRating + geev(cnam, 'DNAM');
-		if not armorTypeSet then begin
-			// The armor type and thus calculated level will be based off the first armor encountered
-			armorType := geev(cnam, 'BOD2\Armor Type');
-			armorTypeSet := True
 		end;
 
 	end;
