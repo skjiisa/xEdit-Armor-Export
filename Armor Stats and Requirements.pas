@@ -45,15 +45,18 @@ var
 	i, j, k, count, level: integer;
 	armorRating: double;
 	armorTypeSet: bool;
-	armorType, itemID, itemName: string;
+	armorType, itemID, itemName, armorName: string;
 	cobj, cnam, items, li, item, refBy, bnam: IInterface;
 	slIngredients, slIngredientNames, slOutput: TStringList;
+	module, json, outputJSON: TJsonObject;
 begin
 	slIngredients := TStringList.Create;
 	slIngredientNames := TStringList.Create;
 	slOutput := TStringList.Create;
 	armorRating := 0;
 	armorTypeSet := False;
+	
+	InputQuery('Armor Stats and Requirements', 'Armor Name', armorName);
 
 	// Go through every armor piece
 	for i := 0 to slCobj.Count - 1 do begin
@@ -116,19 +119,58 @@ begin
 	AddMessage('Total armor rating: '+IntToStr(armorRating));
 	AddMessage('Level '+IntToStr(level));
 
-	//slOutput.Add();
+	slOutput.Add('---- Simple printout ----');
+	slOutput.Add(armorName);
 	for i := 0 to slIngredients.Count - 1 do
 		slOutput.Add(IntToStr(Integer(slIngredients.Objects[i]))+',"'+slIngredients[i]+'","'+slIngredientNames[i]+'"');
 	
-	// This breaks csv format but I don't care
 	slOutput.Add('Armor Rating: '+FloatToStr(armorRating));
 	slOutput.Add(armorType);
 	slOutput.Add('Level '+IntToStr(level));
+	
+	outputJSON := TJsonObject.Create;
+	module := outputJSON.A['modules'].AddObject;
+	
+	// This type means armor, so this is static
+	module.S['type'] := 'EA1A35DB-3165-45F0-A55D-A94D5B5DA6BE';
+	
+	// I can't find any Pascal/Delphi function for generating a UUID or GUID
+	// that works in xEdit, so I'm hard-coding one for now.
+	module.S['id'] := '488b262e-6176-4dc4-a7ee-67a798e7a2fe';
+	
+	module.S['name'] := armorName;
+	module.I['level'] := level;
+	
+	json := module.A['attributes'].AddObject;
+	if armorType = 'Light Armor' then
+		json.S['attribute'] := '97113C70-BCF3-490D-9810-761A783B45D3'
+	else if armorType = 'Heavy Armor' then
+		json.S['attribute'] := '5BE4471A-F7CA-4F1C-B81C-E4A20C4C7525';
+	
+	// For now, assume it's compatible with all 3 Skyrims
+	module.A['games'].Add('33839302-E5B9-4299-AA81-444BED243F20');
+	module.A['games'].Add('75CFE734-1107-4B03-8269-AC130D88A8B7');
+	module.A['games'].Add('C68322E4-6550-4588-B5E4-D54DF5976E7C');
+	
+	for i := 0 to slIngredients.Count - 1 do begin
+		json := module.A['ingredients'].AddObject;
+		json.S['ingredient'] := slIngredients[i];
+		json.I['quantity'] := Integer(slIngredients.Objects[i]);
+	end;
+	
+	slOutput.Add('');
+	slOutput.Add('---- Pretty Character Tracker JSON ----');
+	slOutput.Add(outputJSON.ToJSON({Compact:=}False));
+	slOutput.Add('');
+	slOutput.Add('---- Compact Character Tracker JSON ----');
+	slOutput.Add(outputJSON.ToJSON({Compact:=}True));
 
 	slOutput.SaveToFile('Ingredients.txt');
 	slIngredients.Free;
 	slIngredientNames.Free;
 	slOutput.Free;
+	module.Free;
+	//json and module point to children of outputJSON so don't need freeing
 end;
 
 end.
