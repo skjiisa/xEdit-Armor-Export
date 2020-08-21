@@ -11,7 +11,8 @@ This script depends on `mteFunctions.pas`
 ### Installation
 
 1. Copy `mteFunctions.pas` (from Automation Tools for TES5Edit or elsewhere) to your xEdit's `Edit Scripts` directory.
-1. Copy `Armor Stats and Requirements.pas` from this repository to your xEdit's `Edit Scripts` directory.
+1. Merge the `Edit Scripts` folder from this repository with the one from you xEdit install.
+1. Copy `CT Ingredients-Do Not Edit.txt` to your xEdit install (the same directory as the exe file). As the title suggests, don't edit this file.
 
 ### Running
 
