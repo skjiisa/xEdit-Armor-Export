@@ -17,6 +17,7 @@ This script depends on `mteFunctions.pas`
 
 1. In xEdit, select all armor items for a particular armor set then right click and choose `Apply Script...`.
 1. From the menu, chose `Armor Stats and Requirements.pas` and click OK.
+1. Enter a name for the armor set.
 1. This will create an Ingredients.txt file in your xEdit directory with the following information:
 
 * CSV list of crafting ingredients required
@@ -24,3 +25,4 @@ This script depends on `mteFunctions.pas`
 * Combined armor rating
 * The armor type (of the first armor selected)
 * Calculated level based on type and rating
+* JSON that can be imported into the [Character Tracker](https://github.com/Isvvc/Character-Tracker) iOS app.
