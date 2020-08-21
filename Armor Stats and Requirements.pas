@@ -45,7 +45,7 @@ var
 	i, j, k, count, level: integer;
 	armorRating: double;
 	armorTypeSet: bool;
-	armorType, itemID, itemName, armorName: string;
+	armorType, itemID, itemName, armorName, moduleID: string;
 	cobj, cnam, items, li, item, refBy, bnam: IInterface;
 	slIngredients, slIngredientNames, slOutput: TStringList;
 	module, json, outputJSON: TJsonObject;
@@ -55,6 +55,9 @@ begin
 	slOutput := TStringList.Create;
 	armorRating := 0;
 	armorTypeSet := False;
+	
+	// Temporarily use Ingredients.txt to get a UUID/GUID from Powershell
+	ShellExecute(0, nil, 'powershell', '[guid]::NewGuid().ToString() > Ingredients.txt', nil, 0);
 	
 	InputQuery('Armor Stats and Requirements', 'Armor Name', armorName);
 
@@ -118,6 +121,12 @@ begin
 	//AddMessage(slIngredients[0]+IntToStr(Integer(slIngredients.Objects[0])));
 	AddMessage('Total armor rating: '+IntToStr(armorRating));
 	AddMessage('Level '+IntToStr(level));
+	
+	// Use slOutput to read the UUID/GUID generated earlier
+	slOutput.LoadFromFile('Ingredients.txt');
+	moduleID := slOutput[0];
+	AddMessage(slOutput[0]);
+	slOutput.Delete(0);
 
 	slOutput.Add('---- Simple printout ----');
 	slOutput.Add(armorName);
@@ -136,7 +145,7 @@ begin
 	
 	// I can't find any Pascal/Delphi function for generating a UUID or GUID
 	// that works in xEdit, so I'm hard-coding one for now.
-	module.S['id'] := '488b262e-6176-4dc4-a7ee-67a798e7a2fe';
+	module.S['id'] := moduleID;
 	
 	module.S['name'] := armorName;
 	module.I['level'] := level;
@@ -169,7 +178,7 @@ begin
 	slIngredients.Free;
 	slIngredientNames.Free;
 	slOutput.Free;
-	module.Free;
+	outputJSON.Free;
 	//json and module point to children of outputJSON so don't need freeing
 end;
 

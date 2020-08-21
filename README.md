@@ -26,4 +26,3 @@ This script depends on `mteFunctions.pas`
 * The armor type (of the first armor selected)
 * Calculated level based on type and rating
 * JSON that can be imported into the [Character Tracker](https://github.com/Isvvc/Character-Tracker) iOS app.
-	* **Note**: This script does not yet generate a unique ID for each armor. It instead has one hard-coded. That means only one armor from this script can be added to Character Tracker at a time. This is a temporary limitation that will be fixed in the future.
