@@ -22,10 +22,17 @@ var I: Integer;
 begin
   Result := -1;
   for I := 0 to Strings.Count-1 do
-    if Strings[i] = Value then begin
+	if CompareText(Strings[i], Value) = 0 then begin
       Result := i;
       Exit;
     end;
+end;
+
+procedure AddSkyrims(json: TJsonObject);
+begin
+	json.A['games'].Add('33839302-E5B9-4299-AA81-444BED243F20');
+	json.A['games'].Add('75CFE734-1107-4B03-8269-AC130D88A8B7');
+	json.A['games'].Add('C68322E4-6550-4588-B5E4-D54DF5976E7C');
 end;
 
 function Initialize: integer;
@@ -47,12 +54,13 @@ var
 	armorTypeSet: bool;
 	armorType, itemID, itemName, armorName, moduleID: string;
 	cobj, cnam, items, li, item, refBy, bnam: IInterface;
-	slIngredients, slIngredientNames, slOutput: TStringList;
+	slIngredients, slIngredientNames, slOutput, slCTIngredients: TStringList;
 	module, json, outputJSON: TJsonObject;
 begin
 	slIngredients := TStringList.Create;
 	slIngredientNames := TStringList.Create;
 	slOutput := TStringList.Create;
+	slCTIngredients := TStringList.Create;
 	armorRating := 0;
 	armorTypeSet := False;
 	
@@ -127,6 +135,10 @@ begin
 	moduleID := slOutput[0];
 	AddMessage(slOutput[0]);
 	slOutput.Delete(0);
+	
+	// Load the reference list of Ingredients included with Character Tracker
+	// so that Ingredients that aren't included can be added.
+	slCTIngredients.LoadFromFile('CT Ingredients-Do Not Edit.txt');
 
 	slOutput.Add('---- Simple printout ----');
 	slOutput.Add(armorName);
@@ -140,7 +152,7 @@ begin
 	outputJSON := TJsonObject.Create;
 	module := outputJSON.A['modules'].AddObject;
 	
-	// This type means armor, so this is static
+	// This type means equipment (armor), so this is static
 	module.S['type'] := 'EA1A35DB-3165-45F0-A55D-A94D5B5DA6BE';
 	
 	// I can't find any Pascal/Delphi function for generating a UUID or GUID
@@ -157,14 +169,22 @@ begin
 		json.S['attribute'] := '5BE4471A-F7CA-4F1C-B81C-E4A20C4C7525';
 	
 	// For now, assume it's compatible with all 3 Skyrims
-	module.A['games'].Add('33839302-E5B9-4299-AA81-444BED243F20');
-	module.A['games'].Add('75CFE734-1107-4B03-8269-AC130D88A8B7');
-	module.A['games'].Add('C68322E4-6550-4588-B5E4-D54DF5976E7C');
+	AddSkyrims(module);
 	
 	for i := 0 to slIngredients.Count - 1 do begin
 		json := module.A['ingredients'].AddObject;
 		json.S['ingredient'] := slIngredients[i];
 		json.I['quantity'] := Integer(slIngredients.Objects[i]);
+		
+		// If the Ingredient isn't already included in Character Tracker,
+		// create a new object for it
+		if IndexOfStringInArray(slIngredients[i], slCTIngredients) = -1 then begin
+			json := outputJSON.A['ingredients'].AddObject;
+			json.S['id'] := slIngredients[i];
+			json.S['name'] := slIngredientNames[i];
+			// For now, assume it's compatible with all 3 Skyrims
+			AddSkyrims(json);
+		end;
 	end;
 	
 	slOutput.Add('');
@@ -178,6 +198,7 @@ begin
 	slIngredients.Free;
 	slIngredientNames.Free;
 	slOutput.Free;
+	slCTIngredients.Free;
 	outputJSON.Free;
 	//json and module point to children of outputJSON so don't need freeing
 end;
