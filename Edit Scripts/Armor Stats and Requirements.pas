@@ -21,7 +21,7 @@ function IndexOfStringInArray(Value: string; Strings: TStringList): Integer;
 var I: Integer;
 begin
   Result := -1;
-  for I := 0 to Strings.Count-1 do
+  for I := 0 to Pred(Strings.Count) do
 	if CompareText(Strings[i], Value) = 0 then begin
       Result := i;
       Exit;
@@ -33,6 +33,21 @@ begin
 	json.A['games'].Add('33839302-E5B9-4299-AA81-444BED243F20');
 	json.A['games'].Add('75CFE734-1107-4B03-8269-AC130D88A8B7');
 	json.A['games'].Add('C68322E4-6550-4588-B5E4-D54DF5976E7C');
+end;
+
+function FlagsConflict(sl1, sl2: TStringList): Bool;
+var i: Integer;
+begin
+	Result := False;
+	for i := 0 to Pred(sl1.Count) do
+		if CompareText(sl1[i], sl2[i]) <> 0 then begin
+			Result := True;
+			Exit;
+		end
+		else if (Assigned(sl1.Objects[i])) and (Assigned(sl2.Objects[i])) then begin
+			Result := True;
+			Exit;
+		end;
 end;
 
 function Initialize: integer;
@@ -53,14 +68,15 @@ var
 	armorRating: double;
 	armorTypeSet: bool;
 	armorType, itemID, itemName, armorName, moduleID, modName, modID: string;
-	cobj, cnam, items, li, item, refBy, bnam: IInterface;
-	slIngredients, slIngredientNames, slOutput, slCTIngredients: TStringList;
+	cobj, cnam, items, li, item, refBy, bnam, arma, flags: IInterface;
+	slIngredients, slIngredientNames, slOutput, slCTIngredients, slFlags, slots: TStringList;
 	module, modJSON, json, outputJSON: TJsonObject;
 begin
 	slIngredients := TStringList.Create;
 	slIngredientNames := TStringList.Create;
 	slOutput := TStringList.Create;
 	slCTIngredients := TStringList.Create;
+	slots := TStringList.Create;
 	armorRating := 0;
 	armorTypeSet := False;
 	
@@ -73,19 +89,45 @@ begin
 	// Go through every armor piece
 	for i := 0 to slCobj.Count - 1 do begin
 		cnam := ObjectToElement(slCobj.Objects[i]);
-		AddMessage('    Processing '+slCobj[i]);
+		AddMessage('    Equipping '+slCobj[i]);
 		
-		// Increase the armor rating by the amount of the resulting armor
-		armorRating := armorRating + geev(cnam, 'DNAM');
-		if not armorTypeSet then begin
-			// The armor type and thus calculated level will be based off the first armor encountered
-			armorType := geev(cnam, 'BOD2\Armor Type');
-			if (armorType = 'Light Armor') or (armorType = 'Heavy Armor') then
-				armorTypeSet := True
+		// Get the Armor Addon to check its armor slots
+		arma := LinksTo(ElementByPath(cnam, 'Armature\MODL'));
+		flags := ElementByPath(arma, 'BOD2\First Person Flags');
+		slFlags := TStringList.Create;
+		slFlags.text := FlagValues(flags);
+		
+		if slots.Count = 0 then
+			slots.text := FlagValues(ElementByPath(arma, 'BOD2\First Person Flags'));
+		
+		for i := 0 to Pred(slFlags.Count) do begin
+			slFlags.Objects[i] := TObject(geev(flags, slFlags[i]));
+			if Assigned(slFlags.Objects[i]) then
+				AddMessage('            ' + slFlags[i]);
 		end;
 		
+		if FlagsConflict(slFlags, slots) then
+			AddMessage('        Conflicts with alreqdy eqipped item. Armor rating not added.')
+		else begin
+			// Increase the armor rating by the amount of the resulting armor
+			armorRating := armorRating + geev(cnam, 'DNAM');
+			if not armorTypeSet then begin
+				// The armor type and thus calculated level will be based off the first armor encountered
+				armorType := geev(cnam, 'BOD2\Armor Type');
+				if (armorType = 'Light Armor') or (armorType = 'Heavy Armor') then
+					armorTypeSet := True
+			end;
+			
+			for i := 0 to Pred(slFlags.Count) do
+				if Assigned(slFlags.Objects[i]) then
+					slots.Objects[i] := slFlags.Objects[i];
+		end;
+		
+		slFlags.Free;
+		
 		// Go through all of the Referenced By until you find the crafting (not tempering) recipe
-		for i := 0 to ReferencedByCount(cnam) - 1 do begin
+		AddMessage('        Adding ingredients.');
+		for i := 0 to Pred(ReferencedByCount(cnam)) do begin
 			refBy := ObjectToElement(ReferencedByIndex(cnam, i));
 			if Signature(refBy) = 'COBJ' then begin
 				bnam := LinksTo(ElementByPath(refBy, 'BNAM'));
@@ -259,6 +301,7 @@ begin
 	slIngredientNames.Free;
 	slOutput.Free;
 	slCTIngredients.Free;
+	slots.Free;
 	outputJSON.Free;
 	//json and module point to children of outputJSON so don't need freeing
 end;
