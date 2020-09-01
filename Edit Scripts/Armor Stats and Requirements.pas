@@ -241,13 +241,20 @@ begin
 	end;
 	
 	slOutput.Add('');
+	slOutput.Add('(Compact JSON in Ingredients.json)');
 	slOutput.Add('---- Pretty Character Tracker JSON ----');
 	slOutput.Add(outputJSON.ToJSON({Compact:=}False));
-	slOutput.Add('');
-	slOutput.Add('---- Compact Character Tracker JSON ----');
-	slOutput.Add(outputJSON.ToJSON({Compact:=}True));
-
 	slOutput.SaveToFile('Armor Export\Ingredients.txt');
+	
+	slOutput.Free;
+	slOutput := TStringList.Create;
+	slOutput.Add(outputJSON.ToJSON({Compact:=}True));
+	slOutput.SaveToFile('Armor Export\Ingredients.json');
+	
+	// Requires my modified myqr.exe compiled from https://github.com/Isvvc/qrcode
+	// This should have already come with this script if you downloaded it from Releases.
+	ShellExecute(0, nil, '"Armor Export\myqr.exe"', '-l L -d "Armor Export" "Armor Export\Ingredients.json"', nil, 0);
+
 	slIngredients.Free;
 	slIngredientNames.Free;
 	slOutput.Free;
