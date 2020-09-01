@@ -52,10 +52,10 @@ var
 	i, j, k, count, level: integer;
 	armorRating: double;
 	armorTypeSet: bool;
-	armorType, itemID, itemName, armorName, moduleID: string;
+	armorType, itemID, itemName, armorName, moduleID, modName, modID: string;
 	cobj, cnam, items, li, item, refBy, bnam: IInterface;
 	slIngredients, slIngredientNames, slOutput, slCTIngredients: TStringList;
-	module, json, outputJSON: TJsonObject;
+	module, modJSON, json, outputJSON: TJsonObject;
 begin
 	slIngredients := TStringList.Create;
 	slIngredientNames := TStringList.Create;
@@ -64,10 +64,11 @@ begin
 	armorRating := 0;
 	armorTypeSet := False;
 	
-	// Temporarily use Ingredients.txt to get a UUID/GUID from Powershell
-	ShellExecute(0, nil, 'powershell', '[guid]::NewGuid().ToString() > Ingredients.txt', nil, 0);
+	// Temporarily use Ingredients.txt to get two UUID/GUIDs from Powershell
+	ShellExecute(0, nil, 'powershell', '[guid]::NewGuid().ToString() > Ingredients.txt; [guid]::NewGuid().ToString() >> Ingredients.txt', nil, 0);
 	
 	InputQuery('Armor Stats and Requirements', 'Armor Name', armorName);
+	InputQuery('Create mod?', 'Mod name or empty for no mod', modName);
 
 	// Go through every armor piece
 	for i := 0 to slCobj.Count - 1 do begin
@@ -171,7 +172,8 @@ begin
 	// Use slOutput to read the UUID/GUID generated earlier
 	slOutput.LoadFromFile('Ingredients.txt');
 	moduleID := slOutput[0];
-	AddMessage(slOutput[0]);
+	modID := slOutput[1];
+	slOutput.Delete(1);
 	slOutput.Delete(0);
 	
 	// Load the reference list of Ingredients included with Character Tracker
@@ -187,14 +189,14 @@ begin
 	slOutput.Add(armorType);
 	slOutput.Add('Level '+IntToStr(level));
 	
+	// Create JSON output
+	
 	outputJSON := TJsonObject.Create;
 	module := outputJSON.A['modules'].AddObject;
 	
 	// This type means equipment (armor), so this is static
 	module.S['type'] := 'EA1A35DB-3165-45F0-A55D-A94D5B5DA6BE';
 	
-	// I can't find any Pascal/Delphi function for generating a UUID or GUID
-	// that works in xEdit, so I'm hard-coding one for now.
 	module.S['id'] := moduleID;
 	
 	module.S['name'] := armorName;
@@ -209,6 +211,16 @@ begin
 	// For now, assume it's compatible with all 3 Skyrims
 	AddSkyrims(module);
 	
+	// Only add a mod if the user gave a mod name
+	if modName <> '' then begin
+		modJSON := outputJSON.A['mods'].AddObject;
+		modJSON.S['name'] := modName;
+		modJSON.S['id'] := modID;
+		modJSON.A['modules'].Add(moduleID);
+		// Mods aren't game-dependent right now in Character Tracker.
+		// Once they are, add them to Skyrims here.
+	end;
+	
 	for i := 0 to slIngredients.Count - 1 do begin
 		json := module.A['ingredients'].AddObject;
 		json.S['ingredient'] := slIngredients[i];
@@ -222,6 +234,9 @@ begin
 			json.S['name'] := slIngredientNames[i];
 			// For now, assume it's compatible with all 3 Skyrims
 			AddSkyrims(json);
+			
+			if Assigned(modJSON) then
+				modJSON.A['ingredients'].Add(slIngredients[i]);
 		end;
 	end;
 	
