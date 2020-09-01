@@ -12,7 +12,7 @@
 
 unit UserScript;
 
-uses mteFunctions;
+uses 'lib\mteFunctions';
 
 var
 	slCobj, slCsv: TStringList;
