@@ -121,8 +121,17 @@ begin
 		items := ElementByPath(cobj, 'Conditions');
 		for j := 0 to Pred(ElementCount(items)) do begin
 			li := ElementByIndex(items, j);
-			if (geev(li, 'CTDA\Function')) = 'GetItemCount' then begin
-				item := LinksTo(ElementByPath(li, 'CTDA\Inventory Object'));
+			
+			// I wish I could use a switch statement here,
+			// but Pascal only supports case on integers.
+			if geev(li, 'CTDA\Function') = 'GetItemCount' then
+				item := LinksTo(ElementByPath(li, 'CTDA\Inventory Object'))
+			else if geev(li, 'CTDA\Function') = 'HasPerk' then
+				item := LinksTo(ElementByPath(li, 'CTDA\Perk'))
+			else
+				item := nil;
+			
+			if Assigned(item) then begin
 				itemName := DisplayName(item);
 				itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
 				
