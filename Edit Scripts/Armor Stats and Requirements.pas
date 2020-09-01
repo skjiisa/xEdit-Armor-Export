@@ -107,7 +107,7 @@ begin
 		end;
 		
 		if FlagsConflict(slFlags, slots) then
-			AddMessage('        Conflicts with alreqdy eqipped item. Armor rating not added.')
+			AddMessage('        Conflicts with already eqipped item. Armor rating not added.')
 		else begin
 			// Increase the armor rating by the amount of the resulting armor
 			armorRating := armorRating + geev(cnam, 'DNAM');
