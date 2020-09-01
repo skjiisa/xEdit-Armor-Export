@@ -96,10 +96,10 @@ begin
 		end;
 	
 		if not Assigned(cobj) then Continue;
-		items := ElementByPath(cobj, 'Items');
 		
 		// Add every crafting ingredient to the ingredients list
-		for j := 0 to ElementCount(items) - 1 do begin
+		items := ElementByPath(cobj, 'Items');
+		for j := 0 to Pred(ElementCount(items)) do begin
 			li := ElementByIndex(items, j);
 			item := LinksTo(ElementByPath(li, 'CNTO\Item'));
 			count := geev(li, 'CNTO - Item\Count');
@@ -107,13 +107,42 @@ begin
 			itemName := DisplayName(item);
 			itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
 			k := IndexOfStringInArray(itemID, slIngredients);
-			// If the list doesn't have the ingredient yet, add item
 			if k <> -1 then
+				// If the list already has the ingredient, increase the count
 				slIngredients.Objects[k] := TObject(count + Integer(slIngredients.Objects[k]))
-			// If the list already has the ingredient, increase the count
 			else begin
+				// If the list doesn't have the ingredient yet, add item
 				slIngredients.AddObject(itemID, TObject(count));
 				slIngredientNames.Add(itemName);
+			end;
+		end;
+		
+		// Add perks, crafting manuals, etc. to ingredients list
+		items := ElementByPath(cobj, 'Conditions');
+		for j := 0 to Pred(ElementCount(items)) do begin
+			li := ElementByIndex(items, j);
+			if (geev(li, 'CTDA\Function')) = 'GetItemCount' then begin
+				item := LinksTo(ElementByPath(li, 'CTDA\Inventory Object'));
+				itemName := DisplayName(item);
+				itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
+				
+				count := geev(li, 'CTDA\Comparison Value');
+				// If only one item is required, set count to 0
+				// to improve the way it is displayed in Character Tracker
+				if count = 1 then
+					count := 0;
+				k := IndexOfStringInArray(itemID, slIngredients);
+				if k <> -1 then begin
+					// Since these items aren't consumed on use,
+					// only store the largest value found.
+					// Don't add them up.
+					if count > Integer(slIngredients.Objects[k]) then
+						slIngredients.Objects[k] := TObject(count);
+				end
+				else begin
+					slIngredients.AddObject(itemID, TObject(count));
+					slIngredientNames.Add(itemName);
+				end;
 			end;
 		end;
 
