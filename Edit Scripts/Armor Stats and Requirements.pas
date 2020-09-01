@@ -65,7 +65,7 @@ begin
 	armorTypeSet := False;
 	
 	// Temporarily use Ingredients.txt to get two UUID/GUIDs from Powershell
-	ShellExecute(0, nil, 'powershell', '[guid]::NewGuid().ToString() > Ingredients.txt; [guid]::NewGuid().ToString() >> Ingredients.txt', nil, 0);
+	ShellExecute(0, nil, 'powershell', '[guid]::NewGuid().ToString() > Armor` Export\Ingredients.txt; [guid]::NewGuid().ToString() >> Armor` Export\Ingredients.txt', nil, 0);
 	
 	InputQuery('Armor Stats and Requirements', 'Armor Name', armorName);
 	InputQuery('Create mod?', 'Mod name or empty for no mod', modName);
@@ -170,7 +170,7 @@ begin
 	AddMessage('Level '+IntToStr(level));
 	
 	// Use slOutput to read the UUID/GUID generated earlier
-	slOutput.LoadFromFile('Ingredients.txt');
+	slOutput.LoadFromFile('Armor Export\Ingredients.txt');
 	moduleID := slOutput[0];
 	modID := slOutput[1];
 	slOutput.Delete(1);
@@ -178,7 +178,7 @@ begin
 	
 	// Load the reference list of Ingredients included with Character Tracker
 	// so that Ingredients that aren't included can be added.
-	slCTIngredients.LoadFromFile('CT Ingredients-Do Not Edit.txt');
+	slCTIngredients.LoadFromFile('Armor Export\CT Ingredients-Do Not Edit.txt');
 
 	slOutput.Add('---- Simple printout ----');
 	slOutput.Add(armorName);
@@ -247,7 +247,7 @@ begin
 	slOutput.Add('---- Compact Character Tracker JSON ----');
 	slOutput.Add(outputJSON.ToJSON({Compact:=}True));
 
-	slOutput.SaveToFile('Ingredients.txt');
+	slOutput.SaveToFile('Armor Export\Ingredients.txt');
 	slIngredients.Free;
 	slIngredientNames.Free;
 	slOutput.Free;
