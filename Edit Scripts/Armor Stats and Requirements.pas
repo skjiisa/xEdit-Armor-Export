@@ -28,12 +28,29 @@ begin
     end;
 end;
 
-procedure AddIngredients(slIngredients, slIngredientNames: TStringList; cobj: IInterface);
+// Returns False if no COBJ could be found for the cnam object
+function AddIngredients(slIngredients, slIngredientNames: TStringList; cnam: IInterface;): Bool;
 var
 	i, j, count: integer;
 	itemName, itemID: string;
-	items, item, li: IInterface;
+	ref, bnam, cobj, items, item, li: IInterface;
 begin
+	Result := False;
+
+	// Go through all of the Referenced By until you find the crafting (not tempering) recipe
+	for i := 0 to Pred(ReferencedByCount(cnam)) do begin
+		ref := ObjectToElement(ReferencedByIndex(cnam, i));
+		if (Signature(ref) = 'COBJ') and (geev(LinksTo(ElementByPath(ref, 'CNAM')), 'EDID') = geev(cnam, 'EDID')) then begin
+			bnam := LinksTo(ElementByPath(ref, 'BNAM'));
+			if (geev(bnam, 'EDID') = 'CraftingSmithingForge') or (geev(bnam, 'EDID') = 'CraftingTanningRack') then begin;
+				cobj := ref;
+				break;
+			end;
+		end;
+	end;
+
+	if not Assigned(cobj) then exit;
+	
 	// Add every crafting ingredient to the ingredients list
 	items := ElementByPath(cobj, 'Items');
 	for i := 0 to Pred(ElementCount(items)) do begin
@@ -43,6 +60,13 @@ begin
 
 		itemName := DisplayName(item);
 		itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
+		
+		// Run this function recursively on this ingredient if it's from this mod.
+		if GetFileName(GetFile(item)) = GetFileName(GetFile(cnam)) then
+			if AddIngredients(slIngredients, slIngredientNames, item) then
+				// A recipe was found for this ingredient. Don't add this to the list.
+				continue;
+		
 		j := IndexOfStringInArray(itemID, slIngredients);
 		if j <> -1 then
 			// If the list already has the ingredient, increase the count
@@ -91,6 +115,8 @@ begin
 			end;
 		end;
 	end;
+	
+	Result := True;
 end;
 
 procedure AddSkyrims(json: TJsonObject);
@@ -133,7 +159,7 @@ var
 	armorRating: double;
 	armorTypeSet: bool;
 	armorType, armorName, moduleID, modName, modID: string;
-	cobj, cnam, refBy, bnam, arma, flags: IInterface;
+	cnam, arma, flags: IInterface;
 	slIngredients, slIngredientNames, slOutput, slCTIngredients, slFlags, slots: TStringList;
 	module, modJSON, json, outputJSON: TJsonObject;
 begin
@@ -190,21 +216,8 @@ begin
 		
 		slFlags.Free;
 		
-		// Go through all of the Referenced By until you find the crafting (not tempering) recipe
 		AddMessage('        Adding ingredients.');
-		for i := 0 to Pred(ReferencedByCount(cnam)) do begin
-			refBy := ObjectToElement(ReferencedByIndex(cnam, i));
-			if Signature(refBy) = 'COBJ' then begin
-				bnam := LinksTo(ElementByPath(refBy, 'BNAM'));
-				if (geev(bnam, 'EDID') = 'CraftingSmithingForge') or (geev(bnam, 'EDID') = 'CraftingTanningRack') then begin;
-					cobj := refBy;
-					break;
-				end;
-			end;
-		end;
-	
-		if not Assigned(cobj) then Continue;
-		AddIngredients(slIngredients, slIngredientNames, cobj)
+		AddIngredients(slIngredients, slIngredientNames, cnam);
 	end;
 	
 	// These level calculations are quadratic extrapolations from the in-game leveled lists
