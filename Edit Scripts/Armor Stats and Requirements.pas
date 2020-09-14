@@ -15,7 +15,7 @@ unit UserScript;
 uses 'lib\mteFunctions';
 
 var
-	slCobj, slCsv: TStringList;
+	slCobj: TStringList;
 
 function IndexOfStringInArray(Value: string; Strings: TStringList): Integer;
 var I: Integer;
@@ -26,6 +26,97 @@ begin
       Result := i;
       Exit;
     end;
+end;
+
+// Returns False if no COBJ could be found for the cnam object
+function AddIngredients(slIngredients, slIngredientNames: TStringList; cnam: IInterface;): Bool;
+var
+	i, j, count: integer;
+	itemName, itemID: string;
+	ref, bnam, cobj, items, item, li: IInterface;
+begin
+	Result := False;
+
+	// Go through all of the Referenced By until you find the crafting (not tempering) recipe
+	for i := 0 to Pred(ReferencedByCount(cnam)) do begin
+		ref := ObjectToElement(ReferencedByIndex(cnam, i));
+		if (Signature(ref) = 'COBJ') and (geev(LinksTo(ElementByPath(ref, 'CNAM')), 'EDID') = geev(cnam, 'EDID')) then begin
+			bnam := LinksTo(ElementByPath(ref, 'BNAM'));
+			if (geev(bnam, 'EDID') = 'CraftingSmithingForge') or (geev(bnam, 'EDID') = 'CraftingTanningRack') then begin;
+				cobj := ref;
+				break;
+			end;
+		end;
+	end;
+
+	if not Assigned(cobj) then exit;
+	
+	// Add every crafting ingredient to the ingredients list
+	items := ElementByPath(cobj, 'Items');
+	for i := 0 to Pred(ElementCount(items)) do begin
+		li := ElementByIndex(items, i);
+		item := LinksTo(ElementByPath(li, 'CNTO\Item'));
+		count := geev(li, 'CNTO - Item\Count');
+
+		itemName := DisplayName(item);
+		itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
+		
+		// Run this function recursively on this ingredient if it's from this mod.
+		if GetFileName(GetFile(item)) = GetFileName(GetFile(cnam)) then
+			if AddIngredients(slIngredients, slIngredientNames, item) then
+				// A recipe was found for this ingredient. Don't add this to the list.
+				continue;
+		
+		j := IndexOfStringInArray(itemID, slIngredients);
+		if j <> -1 then
+			// If the list already has the ingredient, increase the count
+			slIngredients.Objects[j] := TObject(count + Integer(slIngredients.Objects[j]))
+		else begin
+			// If the list doesn't have the ingredient yet, add item
+			slIngredients.AddObject(itemID, TObject(count));
+			slIngredientNames.Add(itemName);
+		end;
+	end;
+	
+	// Add perks, crafting manuals, etc. to ingredients list
+	items := ElementByPath(cobj, 'Conditions');
+	for i := 0 to Pred(ElementCount(items)) do begin
+		li := ElementByIndex(items, i);
+		
+		// I wish I could use a switch statement here,
+		// but Pascal only supports case on integers.
+		if geev(li, 'CTDA\Function') = 'GetItemCount' then
+			item := LinksTo(ElementByPath(li, 'CTDA\Inventory Object'))
+		else if geev(li, 'CTDA\Function') = 'HasPerk' then
+			item := LinksTo(ElementByPath(li, 'CTDA\Perk'))
+		else
+			item := nil;
+		
+		if Assigned(item) then begin
+			itemName := DisplayName(item);
+			itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
+			
+			count := geev(li, 'CTDA\Comparison Value');
+			// If only one item is required, set count to 0
+			// to improve the way it is displayed in Character Tracker
+			if count = 1 then
+				count := 0;
+			j := IndexOfStringInArray(itemID, slIngredients);
+			if j <> -1 then begin
+				// Since these items aren't consumed on use,
+				// only store the largest value found.
+				// Don't add them up.
+				if count > Integer(slIngredients.Objects[j]) then
+					slIngredients.Objects[j] := TObject(count);
+			end
+			else begin
+				slIngredients.AddObject(itemID, TObject(count));
+				slIngredientNames.Add(itemName);
+			end;
+		end;
+	end;
+	
+	Result := True;
 end;
 
 procedure AddSkyrims(json: TJsonObject);
@@ -64,11 +155,11 @@ end;
 
 function Finalize: integer;
 var
-	i, j, k, count, level: integer;
+	i, level: integer;
 	armorRating: double;
 	armorTypeSet: bool;
-	armorType, itemID, itemName, armorName, moduleID, modName, modID: string;
-	cobj, cnam, items, li, item, refBy, bnam, arma, flags: IInterface;
+	armorType, armorName, moduleID, modName, modID: string;
+	cnam, arma, flags: IInterface;
 	slIngredients, slIngredientNames, slOutput, slCTIngredients, slFlags, slots: TStringList;
 	module, modJSON, json, outputJSON: TJsonObject;
 begin
@@ -125,79 +216,8 @@ begin
 		
 		slFlags.Free;
 		
-		// Go through all of the Referenced By until you find the crafting (not tempering) recipe
 		AddMessage('        Adding ingredients.');
-		for i := 0 to Pred(ReferencedByCount(cnam)) do begin
-			refBy := ObjectToElement(ReferencedByIndex(cnam, i));
-			if Signature(refBy) = 'COBJ' then begin
-				bnam := LinksTo(ElementByPath(refBy, 'BNAM'));
-				if (geev(bnam, 'EDID') = 'CraftingSmithingForge') or (geev(bnam, 'EDID') = 'CraftingTanningRack') then begin;
-					cobj := refBy;
-					break;
-				end;
-			end;
-		end;
-	
-		if not Assigned(cobj) then Continue;
-		
-		// Add every crafting ingredient to the ingredients list
-		items := ElementByPath(cobj, 'Items');
-		for j := 0 to Pred(ElementCount(items)) do begin
-			li := ElementByIndex(items, j);
-			item := LinksTo(ElementByPath(li, 'CNTO\Item'));
-			count := geev(li, 'CNTO - Item\Count');
-
-			itemName := DisplayName(item);
-			itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
-			k := IndexOfStringInArray(itemID, slIngredients);
-			if k <> -1 then
-				// If the list already has the ingredient, increase the count
-				slIngredients.Objects[k] := TObject(count + Integer(slIngredients.Objects[k]))
-			else begin
-				// If the list doesn't have the ingredient yet, add item
-				slIngredients.AddObject(itemID, TObject(count));
-				slIngredientNames.Add(itemName);
-			end;
-		end;
-		
-		// Add perks, crafting manuals, etc. to ingredients list
-		items := ElementByPath(cobj, 'Conditions');
-		for j := 0 to Pred(ElementCount(items)) do begin
-			li := ElementByIndex(items, j);
-			
-			// I wish I could use a switch statement here,
-			// but Pascal only supports case on integers.
-			if geev(li, 'CTDA\Function') = 'GetItemCount' then
-				item := LinksTo(ElementByPath(li, 'CTDA\Inventory Object'))
-			else if geev(li, 'CTDA\Function') = 'HasPerk' then
-				item := LinksTo(ElementByPath(li, 'CTDA\Perk'))
-			else
-				item := nil;
-			
-			if Assigned(item) then begin
-				itemName := DisplayName(item);
-				itemID := GetFileName(GetFile(item))+' '+copy(IntToHex(FixedFormID(item),8),3,6);
-				
-				count := geev(li, 'CTDA\Comparison Value');
-				// If only one item is required, set count to 0
-				// to improve the way it is displayed in Character Tracker
-				if count = 1 then
-					count := 0;
-				k := IndexOfStringInArray(itemID, slIngredients);
-				if k <> -1 then begin
-					// Since these items aren't consumed on use,
-					// only store the largest value found.
-					// Don't add them up.
-					if count > Integer(slIngredients.Objects[k]) then
-						slIngredients.Objects[k] := TObject(count);
-				end
-				else begin
-					slIngredients.AddObject(itemID, TObject(count));
-					slIngredientNames.Add(itemName);
-				end;
-			end;
-		end;
-
+		AddIngredients(slIngredients, slIngredientNames, cnam);
 	end;
 	
 	// These level calculations are quadratic extrapolations from the in-game leveled lists
