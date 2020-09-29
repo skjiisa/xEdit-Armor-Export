@@ -279,8 +279,7 @@ begin
 		modJSON.S['name'] := modName;
 		modJSON.S['id'] := modID;
 		modJSON.A['modules'].Add(moduleID);
-		// Mods aren't game-dependent right now in Character Tracker.
-		// Once they are, add them to Skyrims here.
+		AddSkyrims(modJSON);
 	end;
 	
 	for i := 0 to slIngredients.Count - 1 do begin
