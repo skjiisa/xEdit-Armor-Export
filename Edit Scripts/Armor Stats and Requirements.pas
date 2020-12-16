@@ -159,7 +159,7 @@ var
 	armorRating: double;
 	armorTypeSet: bool;
 	armorType, armorName, moduleID, modName, modID: string;
-	cnam, arma, flags: IInterface;
+	cnam, flags: IInterface;
 	slIngredients, slIngredientNames, slOutput, slCTIngredients, slFlags, slots: TStringList;
 	module, modJSON, json, outputJSON: TJsonObject;
 begin
@@ -175,7 +175,7 @@ begin
 	ShellExecute(0, nil, 'powershell', '[guid]::NewGuid().ToString() > Armor` Export\Ingredients.txt; [guid]::NewGuid().ToString() >> Armor` Export\Ingredients.txt', nil, 0);
 	
 	InputQuery('Armor Stats and Requirements', 'Armor Name', armorName);
-	InputQuery('Create mod?', 'Mod name or empty for no mod', modName);
+	InputQuery('Character Tracker mod', 'Mod name or empty for no mod', modName);
 
 	// Go through every armor piece
 	for i := 0 to slCobj.Count - 1 do begin
@@ -183,13 +183,12 @@ begin
 		AddMessage('    Equipping '+slCobj[i]);
 		
 		// Get the Armor Addon to check its armor slots
-		arma := LinksTo(ElementByPath(cnam, 'Armature\MODL'));
-		flags := ElementByPath(arma, 'BOD2\First Person Flags');
+		flags := ElementByPath(cnam, 'BOD2\First Person Flags');
 		slFlags := TStringList.Create;
 		slFlags.text := FlagValues(flags);
 		
 		if slots.Count = 0 then
-			slots.text := FlagValues(ElementByPath(arma, 'BOD2\First Person Flags'));
+			slots.text := FlagValues(ElementByPath(cnam, 'BOD2\First Person Flags'));
 		
 		for i := 0 to Pred(slFlags.Count) do begin
 			slFlags.Objects[i] := TObject(geev(flags, slFlags[i]));
