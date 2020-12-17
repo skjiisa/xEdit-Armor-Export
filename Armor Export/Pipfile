@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 pysimplegui = "*"
+myqr = {editable = true, git = "https://github.com/Isvvc/qrcode.git"}
 
 [dev-packages]
 
