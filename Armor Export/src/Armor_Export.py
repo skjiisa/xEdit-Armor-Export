@@ -9,16 +9,19 @@ import platform
 if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
+images = ["https://upload.wikimedia.org/wikipedia/en/1/15/The_Elder_Scrolls_V_Skyrim_cover.png"]
+image_cache = dict()
+
 def image_data(url: str) -> bytes:
+    if url in image_cache:
+        return image_cache[url]
     data = BytesIO(requests.get(url).content)
-    
     img = Image.open(data)
     bio = BytesIO()
     img.save(bio, format="PNG")
     del img
-    return bio.getvalue()
-
-images = ["https://upload.wikimedia.org/wikipedia/en/1/15/The_Elder_Scrolls_V_Skyrim_cover.png"]
+    image_cache[url] = bio.getvalue()
+    return image_cache[url]
 
 # Define the window's contents
 layout = [
