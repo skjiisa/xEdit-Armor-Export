@@ -107,6 +107,20 @@ layout = [
 window = sg.Window('Armor Export', layout, finalize=True)
 images_window = None
 
+def update_module_images():
+    global images, ingredients
+    if len(images) > 0:
+        ingredients['modules'][0]['images'] = images.copy()
+    else:
+        ingredients['modules'][0].pop('images')
+
+def update_mod_images():
+    global images, ingredients
+    if len(images) > 0:
+        ingredients['mods'][0]['images'] = images.copy()
+    else:
+        ingredients['mods'][0].pop('images')
+
 def save_ingredients():
     global ingredients, window
     with open('Armor Export\\ingredients.json', 'w') as json_file:
@@ -173,16 +187,16 @@ while True:
         images_window = make_images_window(current_images=True)
     
     elif event == 'SaveModule':
-        ingredients['modules'][0]['images'] = images
+        update_module_images()
         save_ingredients()
     
     elif event == 'SaveMod':
-        ingredients['mods'][0]['images'] = images
+        update_mod_images()
         save_ingredients()
     
     elif event == 'SaveBoth':
-        ingredients['modules'][0]['images'] = images
-        ingredients['mods'][0]['images'] = images
+        update_module_images()
+        update_mod_images()
         save_ingredients()
 
 window.close()
