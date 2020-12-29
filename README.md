@@ -9,7 +9,7 @@ It is still totally usable without it, though.
 
 ### Dependencies
 
-This script depends on `mteFunctions.pas` (included in release zips)
+[Microsoft Visual C++ Redistributable for Visual Studio](https://support.microsoft.com/en-us/help/2977003/the-latest-supported-visual-c-downloads)
 
 ### Installation
 
@@ -51,6 +51,8 @@ This script depends on `mteFunctions.pas` (included in release zips)
 (You can ignore this section if you just download a release zip)
 
 xEdit scripts are compiled at runtime, so no build is required for the Pascal script.
+
+This script depends on [`mteFunctions.pas`](https://github.com/matortheeternal/TES5EditScripts/blob/master/Edit%20Scripts/mteFunctions.pas) (included in releases).
 
 ### Python
 
