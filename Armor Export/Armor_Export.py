@@ -165,9 +165,19 @@ while True:
     elif event == 'Open':
         if images_window is None:
             url = values['-NEXUS_INPUT-']
-            html = requests.get(url).text
-            nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
-            images_window = make_images_window(current_images=False)
+            try:
+                response = requests.get(url)
+                if not 'html' in response.headers['Content-Type']:
+                    sg.popup('Not a valid webpage.')
+                    continue
+                html = response.text
+                nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
+                if len(nexus_images) > 0:
+                    images_window = make_images_window(current_images=False)
+                else:
+                    sg.popup('Not a valid Nexusmods mod page.')
+            except:
+                sg.popup('Invalid URL')
         
     elif 'Image' in event:
         # 'Image' has 5 characters, so remove the first 5 characters to get the index
