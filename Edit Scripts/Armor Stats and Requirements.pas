@@ -313,7 +313,8 @@ begin
 	
 	// Requires my modified myqr.exe compiled from https://github.com/Isvvc/qrcode
 	// This should have already come with this script if you downloaded it from Releases.
-	ShellExecute(0, nil, '"Armor Export\myqr.exe"', '-l L -d "Armor Export" "Armor Export\Ingredients.json"', nil, 0);
+	//ShellExecute(0, nil, '"Armor Export\myqr.exe"', '-l L -d "Armor Export" "Armor Export\Ingredients.json"', nil, 0);
+	ShellExecute(0, nil, '"Armor Export\Python38\python.exe"', '"Armor Export\Armor_Export.py"', nil, 0);
 
 	slIngredients.Free;
 	slIngredientNames.Free;
