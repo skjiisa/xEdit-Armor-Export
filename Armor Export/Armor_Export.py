@@ -114,14 +114,14 @@ def update_module_images():
     global images, ingredients
     if len(images) > 0:
         ingredients['modules'][0]['images'] = images.copy()
-    else:
+    elif 'images' in ingredients['modules'][0]:
         ingredients['modules'][0].pop('images')
 
 def update_mod_images():
     global images, ingredients
     if len(images) > 0:
         ingredients['mods'][0]['images'] = images.copy()
-    else:
+    elif 'images' in ingredients['mods'][0]:
         ingredients['mods'][0].pop('images')
 
 def save_ingredients():
