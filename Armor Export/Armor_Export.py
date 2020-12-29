@@ -20,8 +20,23 @@ try:
     ingredients = json.loads(json_data)
     print(ingredients['modules'][0]['name'])
 except:
-    sg.popup('Ingredients.json not found')
-    exit()
+    json_layout = [
+        [sg.Text('Ingredients.json not found. Enter JSON:')],
+        [sg.Multiline(enter_submits=True, focus=True, size=(80,20), key='-JSON-')],
+        [sg.Button('Continue')]
+    ]
+    json_window = sg.Window('Enter JSON', json_layout, finalize=True)
+    event, values = json_window.read(close=True)
+    if event == sg.WINDOW_CLOSED:
+        del json_window, event, values
+        exit()
+    try:
+        ingredients = json.loads(values['-JSON-'])
+        del json_window, event, values
+    except:
+        del json_window, event, values
+        sg.popup('Invalid JSON')
+        exit()
 
 images = []
 image_cache = dict()
