@@ -15,10 +15,10 @@ This script depends on `mteFunctions.pas` (included in release zips)
 
 1. Download `xEdit-Armor-Export.zip` from the [Releases tab](https://github.com/Isvvc/xEdit-Armor-Export/releases).
 1. Extract to your xEdit (TES5Edit, TES5VREdit, etc.) folder, merging any contents.
-If it asks to replace `mteFunctions.pas`, it doesn't matter either way.
-	+ Extracting `Armor Export\myqr.exe` is optional.
-	It is used for creating QR codes for Character Tracker.
-	You are welcome to remove it if you are not using the app.
+	+ If it asks to replace `mteFunctions.pas`, it shouldn't matter either way.
+	+ Extracting `Python38` and `Armor_Export.py` is optional.
+	These are used for creating QR codes for Character Tracker.
+	You are welcome to remove them if you are not using the app.
 
 ### Running
 
@@ -52,13 +52,31 @@ If it asks to replace `mteFunctions.pas`, it doesn't matter either way.
 
 xEdit scripts are compiled at runtime, so no build is required for the Pascal script.
 
-### MyQR
+### Python
 
-The `myqr.exe` included in Releases comes from [Isvvc/qrcode](https://github.com/Isvvc/qrcode/),
-my slightly modified version of [sylnsfar/qrcode](https://github.com/sylnsfar/qrcode).
+The Python UI is built using [PySimpleGUI](https://github.com/PySimpleGUI/PySimpleGUI).
+
+#### WinPython
+
+The image and QR code UI is built using Python.
+To use a standalone Python distribution like the ones included in releases, you can download a Python 3.8dot release from [WinPython](https://winpython.github.io/).
+Copy the Python folder (will look something like `python-3.8.6.amd64`) to `Armor Export` and rename it to `Python38`.
+
+To install dependencies, navigate to the xEdit directory in Command Prompt and run the following command:
+
+	"Armor Export\Python\python.exe" -m pip install -r requirements.txt
+
+You should now be able to access the UI from the xEdit script or by running:
+
+	"Armor Export\Python\python.exe" "Armor Export\Armor_Export.py"
+
+Note that you must run this from the xEdit directory, not the `Armor Export` directory, or the relative file paths will be wrong.
+
+#### MyQR
+
+[Isvvc/qrcode](https://github.com/Isvvc/qrcode/) is required to generate QR codes.
+This is a slightly modified version of [sylnsfar/qrcode](https://github.com/sylnsfar/qrcode).
 The changes I made were simply adding `"` to the supported characters list so it could encode JSON
 and allowing it to read input from a file so long JSON could be passed in without having to try to pass it as an argument.
 
-Once Python dependencies are installed (presumably using `pip`), it can be built using [PyInstaller](https://www.pyinstaller.org/) for Windows.
-
-	pyinstaller -F myqr.py
+Unlike previous releases, there is no `exe` file to generate. The included `python.exe` is run directly.
