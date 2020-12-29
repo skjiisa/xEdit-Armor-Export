@@ -1,6 +1,7 @@
 import PySimpleGUI as sg
 import requests
 import re
+import json
 from PIL import Image, ImageTk
 from io import BytesIO
 
@@ -9,6 +10,12 @@ import ctypes
 import platform
 if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
+
+# Load the json file
+with open('ingredients.json', 'r') as json_file:
+    json_data = json_file.read()
+ingredients = json.loads(json_data)
+print(ingredients['modules'][0]['name'])
 
 images = []
 image_cache = dict()
@@ -23,6 +30,8 @@ def image_data(url: str) -> bytes:
     img = Image.open(data)
     
     cur_width, cur_height = img.size
+    # TODO: only scale if the image is larger than this
+    # Nexusmods thumbnails are slightly below 400 pixels, so don't need to be resized.
     if cur_width > 400 or cur_height > 400:
         scale = min(400/cur_height, 400/cur_width)
         img = img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
@@ -68,7 +77,7 @@ images_col = [
 ]
 
 preview_col = [
-    [sg.Image(data=image_data("https://upload.wikimedia.org/wikipedia/en/1/15/The_Elder_Scrolls_V_Skyrim_cover.png"), key='-PREVIEW-')]
+    [sg.Image(key='-PREVIEW-')]
 ]
 
 layout = [
@@ -84,6 +93,11 @@ layout = [
         sg.Button('Preview', key='PreviewInput')
     ],
     [sg.Column(images_col), sg.Column(preview_col)],
+    [
+        sg.Button('Save images to module', key='SaveModule'),
+        sg.Button('Save images to mod', key='SaveMod'),
+        sg.Button('Save images to both', key='SaveBoth')
+    ],
     [sg.Button('Quit')]
 ]
 
@@ -147,5 +161,21 @@ while True:
         window['-LIST-'].update(images)
         images_window.close()
         images_window = make_images_window(current_images=True)
+    
+    elif event == 'SaveModule':
+        ingredients['modules'][0]['images'] = images
+        with open('ingredients.json', 'w') as json_file:
+            json_file.write(json.dumps(ingredients))
+    
+    elif event == 'SaveMod':
+        ingredients['mods'][0]['images'] = images
+        with open('ingredients.json', 'w') as json_file:
+            json_file.write(json.dumps(ingredients))
+    
+    elif event == 'SaveBoth':
+        ingredients['modules'][0]['images'] = images
+        ingredients['mods'][0]['images'] = images
+        with open('ingredients.json', 'w') as json_file:
+            json_file.write(json.dumps(ingredients))
 
 window.close()
