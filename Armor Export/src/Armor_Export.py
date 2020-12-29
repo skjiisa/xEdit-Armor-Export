@@ -1,5 +1,6 @@
 import PySimpleGUI as sg
 import requests
+import re
 from PIL import Image, ImageTk
 from io import BytesIO
 
@@ -9,7 +10,7 @@ import platform
 if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
-images = ["https://upload.wikimedia.org/wikipedia/en/1/15/The_Elder_Scrolls_V_Skyrim_cover.png"]
+images = []
 image_cache = dict()
 
 def image_data(url: str) -> bytes:
@@ -49,13 +50,18 @@ images_col = [
 ]
 
 preview_col = [
-    [sg.Image(data=image_data(images[0]), key='-PREVIEW-')]
+    [sg.Image(data=image_data("https://upload.wikimedia.org/wikipedia/en/1/15/The_Elder_Scrolls_V_Skyrim_cover.png"), key='-PREVIEW-')]
 ]
 
 layout = [
+    [sg.Text("Nexusmods URL")],
+    [
+        sg.Input(key='-NEXUS_INPUT-'),
+        sg.Button('Open')
+    ],
     [sg.Text("Image URL")],
     [
-        sg.Input(key='-INPUT-'),
+        sg.Input(key='-URL_INPUT-'),
         sg.Button('Add'),
         sg.Button('Preview', key='PreviewInput')
     ],
@@ -73,7 +79,7 @@ while True:
         break
 
     elif event == 'Add':
-        input = values['-INPUT-']
+        input = values['-URL_INPUT-']
         if not input in images:
             images.append(input)
             window['-LIST-'].update(images)
@@ -88,15 +94,24 @@ while True:
             window['-PREVIEW-'].update(data=image_data(selection[0]))
     
     elif event == 'PreviewInput':
-        input = values['-INPUT-']
+        input = values['-URL_INPUT-']
         window['-PREVIEW-'].update(data=image_data(input))
     
     elif event == 'PreviewAll':
-        images_window = make_images_window(images)
+        if images_window is None:
+            images_window = make_images_window(images)
         
     elif event == sg.WINDOW_CLOSED and active_window == images_window:
         images_window.close()
         images_window = None
+    
+    elif event == 'Open':
+        if images_window is None:
+            url = values['-NEXUS_INPUT-']
+            html = requests.get(url).text
+            matches = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
+            thumbnails = [match[1] for match in matches[:5]]
+            images_window = make_images_window(thumbnails)
         
     elif "Image" in event:
         index = event[5:]
