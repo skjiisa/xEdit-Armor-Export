@@ -166,10 +166,17 @@ def update_mod_images():
 
 def save_ingredients():
     global ingredients, window
-    with open('Armor Export\\ingredients.json', 'w') as json_file:
-        json_file.write(json.dumps(ingredients))
+    ingredients_json = json.dumps(ingredients)
+    
+    try:
+        # Check that Ingredients.json already exists before creating one.
+        with open('Armor Export\\Ingredients.json') as f: pass
+        with open('Armor Export\\Ingredients.json', 'w') as json_file:
+            json_file.write(ingredients_json)
+    except: pass
+
     if window['GenerateQR'].get():
-        myqr.run(json.dumps(ingredients), level = 'L', save_dir='Armor Export')
+        myqr.run(ingredients_json, level = 'L', save_dir='Armor Export')
 
 while True:
     active_window, event, values = sg.read_all_windows()
