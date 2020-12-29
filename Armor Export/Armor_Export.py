@@ -13,13 +13,14 @@ import platform
 if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
-# Load the json file
+# Load the JSON file
 try:
     with open('Armor Export\\Ingredients.json', 'r') as json_file:
         json_data = json_file.read()
     ingredients = json.loads(json_data)
     print(ingredients['modules'][0]['name'])
 except:
+    # If no JSON file found, allow the user to paste in JSON
     json_layout = [
         [sg.Text('Ingredients.json not found. Enter JSON:')],
         [sg.Multiline(enter_submits=True, focus=True, size=(80,20), key='-JSON-')],
@@ -30,11 +31,21 @@ except:
     if event == sg.WINDOW_CLOSED:
         del json_window, event, values
         exit()
+    
+    # Load the JSON
     try:
         ingredients = json.loads(values['-JSON-'])
-        del json_window, event, values
     except:
+        sg.popup('Invalid JSON')
+        exit()
+    
+    # Check that there's a module in the JSON
+    if 'modules' in ingredients:
+        if len(ingredients['modules']) < 1:
+            sg.popup('No modules found')
+            quit()
         del json_window, event, values
+    else:
         sg.popup('Invalid JSON')
         exit()
 
