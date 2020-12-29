@@ -28,21 +28,24 @@ nexus_images_loaded = 0
 def image_data(url: str) -> bytes:
     if url in image_cache:
         return image_cache[url]
-    data = BytesIO(requests.get(url).content)
-    img = Image.open(data)
-    
-    cur_width, cur_height = img.size
-    # TODO: only scale if the image is larger than this
-    # Nexusmods thumbnails are slightly below 400 pixels, so don't need to be resized.
-    if cur_width > 400 or cur_height > 400:
-        scale = min(400/cur_height, 400/cur_width)
-        img = img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
-    
-    bio = BytesIO()
-    img.save(bio, format='PNG')
-    del img
-    image_cache[url] = bio.getvalue()
-    return image_cache[url]
+    try:
+        data = BytesIO(requests.get(url).content)
+        img = Image.open(data)
+        
+        cur_width, cur_height = img.size
+        # TODO: only scale if the image is larger than this
+        # Nexusmods thumbnails are slightly below 400 pixels, so don't need to be resized.
+        if cur_width > 400 or cur_height > 400:
+            scale = min(400/cur_height, 400/cur_width)
+            img = img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
+        
+        bio = BytesIO()
+        img.save(bio, format='PNG')
+        del img
+        image_cache[url] = bio.getvalue()
+        return image_cache[url]
+    except:
+        return None
 
 def make_images_window(current_images):
     global nexus_images_loaded
@@ -136,7 +139,7 @@ while True:
 
     elif event == 'Add':
         input = values['-URL_INPUT-']
-        if not input in images:
+        if not input in images and not input == '':
             images.append(input)
             window['-LIST-'].update(images)
         window['-URL_INPUT-'].update('')
