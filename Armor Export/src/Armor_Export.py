@@ -4,6 +4,8 @@ import re
 import json
 from PIL import Image, ImageTk
 from io import BytesIO
+# Must be the MyQR fork at https://github.com/Isvvc/qrcode/
+from MyQR import myqr
 
 # Support HiDPI
 import ctypes
@@ -96,13 +98,21 @@ layout = [
     [
         sg.Button('Save images to module', key='SaveModule'),
         sg.Button('Save images to mod', key='SaveMod'),
-        sg.Button('Save images to both', key='SaveBoth')
+        sg.Button('Save images to both', key='SaveBoth'),
+        sg.Checkbox('Generate QR code', key='GenerateQR')
     ],
     [sg.Button('Quit')]
 ]
 
 window = sg.Window('Armor Export', layout, finalize=True)
 images_window = None
+
+def save_ingredients():
+    global ingredients, window
+    with open('ingredients.json', 'w') as json_file:
+        json_file.write(json.dumps(ingredients))
+    if window['GenerateQR'].get():
+        myqr.run(json.dumps(ingredients), level = 'L')
 
 while True:
     active_window, event, values = sg.read_all_windows()
@@ -164,18 +174,15 @@ while True:
     
     elif event == 'SaveModule':
         ingredients['modules'][0]['images'] = images
-        with open('ingredients.json', 'w') as json_file:
-            json_file.write(json.dumps(ingredients))
+        save_ingredients()
     
     elif event == 'SaveMod':
         ingredients['mods'][0]['images'] = images
-        with open('ingredients.json', 'w') as json_file:
-            json_file.write(json.dumps(ingredients))
+        save_ingredients()
     
     elif event == 'SaveBoth':
         ingredients['modules'][0]['images'] = images
         ingredients['mods'][0]['images'] = images
-        with open('ingredients.json', 'w') as json_file:
-            json_file.write(json.dumps(ingredients))
+        save_ingredients()
 
 window.close()
