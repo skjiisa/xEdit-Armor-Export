@@ -99,7 +99,7 @@ layout = [
         sg.Button('Save images to module', key='SaveModule'),
         sg.Button('Save images to mod', key='SaveMod'),
         sg.Button('Save images to both', key='SaveBoth'),
-        sg.Checkbox('Generate QR code', key='GenerateQR')
+        sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
     [sg.Button('Quit')]
 ]
