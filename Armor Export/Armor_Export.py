@@ -14,7 +14,7 @@ if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 # Load the json file
-with open('ingredients.json', 'r') as json_file:
+with open('Armor Export\\ingredients.json', 'r') as json_file:
     json_data = json_file.read()
 ingredients = json.loads(json_data)
 print(ingredients['modules'][0]['name'])
@@ -109,10 +109,10 @@ images_window = None
 
 def save_ingredients():
     global ingredients, window
-    with open('ingredients.json', 'w') as json_file:
+    with open('Armor Export\\ingredients.json', 'w') as json_file:
         json_file.write(json.dumps(ingredients))
     if window['GenerateQR'].get():
-        myqr.run(json.dumps(ingredients), level = 'L')
+        myqr.run(json.dumps(ingredients), level = 'L', save_dir='Armor Export')
 
 while True:
     active_window, event, values = sg.read_all_windows()
