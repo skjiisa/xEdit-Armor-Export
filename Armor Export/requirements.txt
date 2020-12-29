@@ -1,0 +1,4 @@
+PySimpleGUI
+requests
+pillow
+git+https://github.com/Isvvc/qrcode.git
