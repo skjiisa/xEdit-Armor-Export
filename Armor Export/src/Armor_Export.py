@@ -132,6 +132,7 @@ while True:
             images_window = make_images_window(current_images=False)
         
     elif 'Image' in event:
+        # 'Image' has 5 characters, so remove the first 5 characters to get the index
         index = event[5:]
         images_window[f'Checkbox{index}'].update(not images_window[f'Checkbox{index}'].get())
     
@@ -145,6 +146,6 @@ while True:
         [images.pop(i) for i in reversed(range(len(images))) if images_window[f'Checkbox{i}'].get()]
         window['-LIST-'].update(images)
         images_window.close()
-        images_window = None
+        images_window = make_images_window(current_images=True)
 
 window.close()
