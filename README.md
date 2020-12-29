@@ -28,7 +28,7 @@ If it asks to replace `mteFunctions.pas`, it doesn't matter either way.
 1. **Optional**: Enter a name for the mod if you want it shown in Character Tracker.
 	+ If you leave this empty, no mod entry will be created in the JSON.
 	+ This has no affect on the simple printout.
-1. This will create an Ingredients.txt file in the `Armor Export` folder in your xEdit directory with the following information:
+1. This will create an `Ingredients.txt` file in the `Armor Export` folder in your xEdit directory with the following information:
 	+ CSV list of crafting ingredients required
 		+ quantity, plugin name and FixedFormID, DisplayName
 	+ Combined armor rating
@@ -36,8 +36,15 @@ If it asks to replace `mteFunctions.pas`, it doesn't matter either way.
 	+ Calculated level based on type and rating
 	+ JSON that can be imported into Character Tracker
 	+ A QR code that can be scanned into Character Tracker if `myqr.exe` is present.
-		+ This can take some time to generate and may not complete until after the xEdit script has finished running.
-		+ Generating the QR code may fail if the JSON output is too large.
+1. A GUI will launch for adding images and generating QR codes.
+	+ Manually add images with the **Image URL** text box
+	+ Enter a Nexusmods mod page in the **Nexusmods URL** text box to select images from the mod page to load.
+		+ Currently only the first 5 images will load.
+		+ Adult-only mod pages will not load as they require a user to be signed in, and this does not currently support signing in to an account.
+	+ When you have the images inputted that you'd like, click any of the **Save images to** buttons to save the images to the `Ingredients.json` file.
+		+ Check **Generate QR code** to generate a QR code that can be scanned into Character Tracker.
+	+ Note that this GUI is in early stages and can crash if text fields are left blank.
+		+ Generating QR codes with no images, however, should work just fine.
 
 ## Build
 
