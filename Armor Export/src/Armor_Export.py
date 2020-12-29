@@ -13,6 +13,9 @@ if int(platform.release()) >= 8:
 images = []
 image_cache = dict()
 
+nexus_images = []
+nexus_images_loaded = 0
+
 def image_data(url: str) -> bytes:
     if url in image_cache:
         return image_cache[url]
@@ -30,12 +33,27 @@ def image_data(url: str) -> bytes:
     image_cache[url] = bio.getvalue()
     return image_cache[url]
 
-def make_images_window(images):
+def make_images_window(current_images):
+    global nexus_images_loaded
+    image_links = []
+    if current_images:
+        image_links = images
+    else:
+        image_links = [image[1] for image in nexus_images[:5]]
+        nexus_images_loaded = 5
+    
     col = sg.Column([[
         sg.Checkbox('', key=f'Checkbox{index}'),
         sg.Image(data=image_data(image), enable_events=True, key=f'Image{index}')
-    ] for index, image in enumerate(images)], size=(500,1000), scrollable=True)
-    images_layout = [[col]]
+    ] for index, image in enumerate(image_links)], size=(500,1000), scrollable=True)
+    
+    images_layout = [[
+        col,
+        sg.Column([
+            [sg.Button('Remove', key='RemoveCurrent') if current_images else sg.Button('Add', key='AddNexus')],
+            [sg.Button('Done')]
+        ], element_justification='center')
+    ]]
     new_window = sg.Window('Images', images_layout, finalize=True)
     return new_window
 
@@ -83,6 +101,7 @@ while True:
         if not input in images:
             images.append(input)
             window['-LIST-'].update(images)
+        window['-URL_INPUT-'].update('')
     
     elif event == 'Remove':
         [images.remove(x) for x in values['-LIST-']]
@@ -99,9 +118,9 @@ while True:
     
     elif event == 'PreviewAll':
         if images_window is None:
-            images_window = make_images_window(images)
+            images_window = make_images_window(current_images=True)
         
-    elif event == sg.WINDOW_CLOSED and active_window == images_window:
+    elif (event == sg.WINDOW_CLOSED and active_window == images_window) or event == 'Done':
         images_window.close()
         images_window = None
     
@@ -109,12 +128,23 @@ while True:
         if images_window is None:
             url = values['-NEXUS_INPUT-']
             html = requests.get(url).text
-            matches = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
-            thumbnails = [match[1] for match in matches[:5]]
-            images_window = make_images_window(thumbnails)
+            nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
+            images_window = make_images_window(current_images=False)
         
-    elif "Image" in event:
+    elif 'Image' in event:
         index = event[5:]
         images_window[f'Checkbox{index}'].update(not images_window[f'Checkbox{index}'].get())
+    
+    elif event == 'AddNexus':
+        [images.append(nexus_images[i][0]) for i in range(min(len(nexus_images), nexus_images_loaded)) if images_window[f'Checkbox{i}'].get() and not nexus_images[i][0] in images]
+        window['-LIST-'].update(images)
+        images_window.close()
+        images_window = None
+    
+    elif event == 'RemoveCurrent':
+        [images.pop(i) for i in reversed(range(len(images))) if images_window[f'Checkbox{i}'].get()]
+        window['-LIST-'].update(images)
+        images_window.close()
+        images_window = None
 
 window.close()
