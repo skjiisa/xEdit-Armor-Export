@@ -131,17 +131,27 @@ images_window = None
 
 def update_module_images():
     global images, ingredients
-    if len(images) > 0:
-        ingredients['modules'][0]['images'] = images.copy()
-    elif 'images' in ingredients['modules'][0]:
-        ingredients['modules'][0].pop('images')
+    try:
+        if len(images) > 0:
+            ingredients['modules'][0]['images'] = images.copy()
+        elif 'images' in ingredients['modules'][0]:
+            ingredients['modules'][0].pop('images')
+        return True
+    except:
+        sg.popup('No module found in JSON')
+        return False
 
 def update_mod_images():
     global images, ingredients
-    if len(images) > 0:
-        ingredients['mods'][0]['images'] = images.copy()
-    elif 'images' in ingredients['mods'][0]:
-        ingredients['mods'][0].pop('images')
+    try:
+        if len(images) > 0:
+            ingredients['mods'][0]['images'] = images.copy()
+        elif 'images' in ingredients['mods'][0]:
+            ingredients['mods'][0].pop('images')
+        return True
+    except:
+        sg.popup('No mod found in JSON')
+        return False
 
 def save_ingredients():
     global ingredients, window
@@ -219,16 +229,16 @@ while True:
         images_window = make_images_window(current_images=True)
     
     elif event == 'SaveModule':
-        update_module_images()
+        update_module_images() and \
         save_ingredients()
     
     elif event == 'SaveMod':
-        update_mod_images()
+        update_mod_images() and \
         save_ingredients()
     
     elif event == 'SaveBoth':
-        update_module_images()
-        update_mod_images()
+        update_module_images() and \
+        update_mod_images() and \
         save_ingredients()
 
 window.close()
