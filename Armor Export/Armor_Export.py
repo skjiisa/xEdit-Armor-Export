@@ -14,10 +14,14 @@ if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 # Load the json file
-with open('Armor Export\\ingredients.json', 'r') as json_file:
-    json_data = json_file.read()
-ingredients = json.loads(json_data)
-print(ingredients['modules'][0]['name'])
+try:
+    with open('Armor Export\\Ingredients.json', 'r') as json_file:
+        json_data = json_file.read()
+    ingredients = json.loads(json_data)
+    print(ingredients['modules'][0]['name'])
+except:
+    sg.popup('Ingredients.json not found')
+    exit()
 
 images = []
 image_cache = dict()
