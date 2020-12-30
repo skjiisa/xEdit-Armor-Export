@@ -13,11 +13,41 @@ import platform
 if int(platform.release()) >= 8:
     ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
-# Load the json file
-with open('Armor Export\\ingredients.json', 'r') as json_file:
-    json_data = json_file.read()
-ingredients = json.loads(json_data)
-print(ingredients['modules'][0]['name'])
+# Load the JSON file
+try:
+    with open('Armor Export\\Ingredients.json', 'r') as json_file:
+        json_data = json_file.read()
+    ingredients = json.loads(json_data)
+    print(ingredients['modules'][0]['name'])
+except:
+    # If no JSON file found, allow the user to paste in JSON
+    json_layout = [
+        [sg.Text('Ingredients.json not found. Enter JSON:')],
+        [sg.Multiline(enter_submits=True, focus=True, size=(80,20), key='-JSON-')],
+        [sg.Button('Continue')]
+    ]
+    json_window = sg.Window('Enter JSON', json_layout, finalize=True)
+    event, values = json_window.read(close=True)
+    if event == sg.WINDOW_CLOSED:
+        del json_window, event, values
+        exit()
+    
+    # Load the JSON
+    try:
+        ingredients = json.loads(values['-JSON-'])
+    except:
+        sg.popup('Invalid JSON')
+        exit()
+    
+    # Check that there's a module in the JSON
+    if 'modules' in ingredients:
+        if len(ingredients['modules']) < 1:
+            sg.popup('No modules found')
+            quit()
+        del json_window, event, values
+    else:
+        sg.popup('Invalid JSON')
+        exit()
 
 images = []
 image_cache = dict()
@@ -28,21 +58,24 @@ nexus_images_loaded = 0
 def image_data(url: str) -> bytes:
     if url in image_cache:
         return image_cache[url]
-    data = BytesIO(requests.get(url).content)
-    img = Image.open(data)
-    
-    cur_width, cur_height = img.size
-    # TODO: only scale if the image is larger than this
-    # Nexusmods thumbnails are slightly below 400 pixels, so don't need to be resized.
-    if cur_width > 400 or cur_height > 400:
-        scale = min(400/cur_height, 400/cur_width)
-        img = img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
-    
-    bio = BytesIO()
-    img.save(bio, format='PNG')
-    del img
-    image_cache[url] = bio.getvalue()
-    return image_cache[url]
+    try:
+        data = BytesIO(requests.get(url).content)
+        img = Image.open(data)
+        
+        cur_width, cur_height = img.size
+        # TODO: only scale if the image is larger than this
+        # Nexusmods thumbnails are slightly below 400 pixels, so don't need to be resized.
+        if cur_width > 400 or cur_height > 400:
+            scale = min(400/cur_height, 400/cur_width)
+            img = img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
+        
+        bio = BytesIO()
+        img.save(bio, format='PNG')
+        del img
+        image_cache[url] = bio.getvalue()
+        return image_cache[url]
+    except:
+        return None
 
 def make_images_window(current_images):
     global nexus_images_loaded
@@ -109,24 +142,41 @@ images_window = None
 
 def update_module_images():
     global images, ingredients
-    if len(images) > 0:
-        ingredients['modules'][0]['images'] = images.copy()
-    else:
-        ingredients['modules'][0].pop('images')
+    try:
+        if len(images) > 0:
+            ingredients['modules'][0]['images'] = images.copy()
+        elif 'images' in ingredients['modules'][0]:
+            ingredients['modules'][0].pop('images')
+        return True
+    except:
+        sg.popup('No module found in JSON')
+        return False
 
 def update_mod_images():
     global images, ingredients
-    if len(images) > 0:
-        ingredients['mods'][0]['images'] = images.copy()
-    else:
-        ingredients['mods'][0].pop('images')
+    try:
+        if len(images) > 0:
+            ingredients['mods'][0]['images'] = images.copy()
+        elif 'images' in ingredients['mods'][0]:
+            ingredients['mods'][0].pop('images')
+        return True
+    except:
+        sg.popup('No mod found in JSON')
+        return False
 
 def save_ingredients():
     global ingredients, window
-    with open('Armor Export\\ingredients.json', 'w') as json_file:
-        json_file.write(json.dumps(ingredients))
+    ingredients_json = json.dumps(ingredients)
+    
+    try:
+        # Check that Ingredients.json already exists before creating one.
+        with open('Armor Export\\Ingredients.json') as f: pass
+        with open('Armor Export\\Ingredients.json', 'w') as json_file:
+            json_file.write(ingredients_json)
+    except: pass
+
     if window['GenerateQR'].get():
-        myqr.run(json.dumps(ingredients), level = 'L', save_dir='Armor Export')
+        myqr.run(ingredients_json, level = 'L', save_dir='Armor Export')
 
 while True:
     active_window, event, values = sg.read_all_windows()
@@ -136,7 +186,7 @@ while True:
 
     elif event == 'Add':
         input = values['-URL_INPUT-']
-        if not input in images:
+        if not input in images and not input == '':
             images.append(input)
             window['-LIST-'].update(images)
         window['-URL_INPUT-'].update('')
@@ -165,9 +215,19 @@ while True:
     elif event == 'Open':
         if images_window is None:
             url = values['-NEXUS_INPUT-']
-            html = requests.get(url).text
-            nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
-            images_window = make_images_window(current_images=False)
+            try:
+                response = requests.get(url)
+                if not 'html' in response.headers['Content-Type']:
+                    sg.popup('Not a valid webpage.')
+                    continue
+                html = response.text
+                nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
+                if len(nexus_images) > 0:
+                    images_window = make_images_window(current_images=False)
+                else:
+                    sg.popup('Not a valid Nexusmods mod page.')
+            except:
+                sg.popup('Invalid URL')
         
     elif 'Image' in event:
         # 'Image' has 5 characters, so remove the first 5 characters to get the index
@@ -187,16 +247,16 @@ while True:
         images_window = make_images_window(current_images=True)
     
     elif event == 'SaveModule':
-        update_module_images()
+        update_module_images() and \
         save_ingredients()
     
     elif event == 'SaveMod':
-        update_mod_images()
+        update_mod_images() and \
         save_ingredients()
     
     elif event == 'SaveBoth':
-        update_module_images()
-        update_mod_images()
+        update_module_images() and \
+        update_mod_images() and \
         save_ingredients()
 
 window.close()
