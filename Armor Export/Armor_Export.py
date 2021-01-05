@@ -190,7 +190,7 @@ def update_mod_images():
         return False
 
 def save_ingredients():
-    global ingredients, window
+    global ingredients, window, background_url, background_file
     ingredients_json = json.dumps(ingredients)
     
     try:
@@ -201,6 +201,16 @@ def save_ingredients():
     except: pass
 
     if window['GenerateQR'].get():
+        if background_url and not background_file:
+            # Fetch background image
+            try:
+                data = BytesIO(requests.get(background_url).content)
+                img = Image.open(data)
+                path = 'Armor Export\\bg.png'
+                img.save(path)
+                background_file = path
+            except: pass
+        
         myqr.run(ingredients_json, level='L', picture=background_file, colorized=True, save_name='qrcode.png', save_dir='Armor Export')
         
         qr = Image.open('Armor Export\\qrcode.png')
@@ -209,6 +219,11 @@ def save_ingredients():
         img.save(bio, format='PNG')
         del img
         window['-PREVIEW-'].update(data=bio.getvalue())
+        
+        if background_url:
+            # Delete the saved background image
+            try: os.remove('Armor Export\\bg.png')
+            except: pass
 
 while True:
     active_window, event, values = sg.read_all_windows()
