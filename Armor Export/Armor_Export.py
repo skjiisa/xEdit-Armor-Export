@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import requests
 import re
 import json
+import os
 from PIL import Image, ImageTk
 from io import BytesIO
 # Must be the MyQR fork at https://github.com/Isvvc/qrcode/
@@ -55,6 +56,13 @@ image_cache = dict()
 nexus_images = []
 nexus_images_loaded = 0
 
+def image_preview(img):
+    cur_width, cur_height = img.size
+    if cur_width > 400 or cur_height > 400:
+        scale = min(400/cur_height, 400/cur_width)
+        return img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
+    return img
+
 def image_data(url: str) -> bytes:
     if url in image_cache:
         return image_cache[url]
@@ -62,12 +70,7 @@ def image_data(url: str) -> bytes:
         data = BytesIO(requests.get(url).content)
         img = Image.open(data)
         
-        cur_width, cur_height = img.size
-        # TODO: only scale if the image is larger than this
-        # Nexusmods thumbnails are slightly below 400 pixels, so don't need to be resized.
-        if cur_width > 400 or cur_height > 400:
-            scale = min(400/cur_height, 400/cur_width)
-            img = img.resize((int(cur_width*scale), int(cur_height*scale)), Image.ANTIALIAS)
+        img = image_preview(img)
         
         bio = BytesIO()
         img.save(bio, format='PNG')
@@ -83,13 +86,17 @@ def make_images_window(current_images):
     if current_images:
         image_links = images
     else:
-        image_links = [image[1] for image in nexus_images[:5]]
-        nexus_images_loaded = 5
+        nexus_images_loaded += 5
+        image_links = [image[1] for image in nexus_images[:nexus_images_loaded]]
     
     col = sg.Column([[
         sg.Checkbox('', key=f'Checkbox{index}'),
         sg.Image(data=image_data(image), enable_events=True, key=f'Image{index}')
-    ] for index, image in enumerate(image_links)], size=(500,1000), scrollable=True)
+    ] for index, image in enumerate(image_links)], size=(500,1000), scrollable=True, vertical_scroll_only=True)
+    
+    if not current_images:
+        col.add_row(sg.Button('Load 5 more', key='LoadMore'))
+        col.set_vscroll_position((nexus_images_loaded - 5) / nexus_images_loaded)
     
     images_layout = [[
         col,
@@ -128,13 +135,17 @@ layout = [
         sg.Button('Preview', key='PreviewInput')
     ],
     [sg.Column(images_col), sg.Column(preview_col)],
+    [sg.Text("Save images to")],
     [
-        sg.Button('Save images to module', key='SaveModule'),
-        sg.Button('Save images to mod', key='SaveMod'),
-        sg.Button('Save images to both', key='SaveBoth'),
+        sg.Button('Module', key='SaveModule'),
+        sg.Button('Mod', key='SaveMod'),
+        sg.Button('Both', key='SaveBoth'),
         sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
-    [sg.Button('Quit')]
+    [
+        sg.Button('Quit'),
+        sg.Button('Open Armor Export folder', key='ArmorExportFolder')
+    ]
 ]
 
 window = sg.Window('Armor Export', layout, finalize=True)
@@ -177,6 +188,12 @@ def save_ingredients():
 
     if window['GenerateQR'].get():
         myqr.run(ingredients_json, level = 'L', save_dir='Armor Export')
+        qr = Image.open('Armor Export\\qrcode.png')
+        img = image_preview(qr)
+        bio = BytesIO()
+        img.save(bio, format='PNG')
+        del img
+        window['-PREVIEW-'].update(data=bio.getvalue())
 
 while True:
     active_window, event, values = sg.read_all_windows()
@@ -223,6 +240,7 @@ while True:
                 html = response.text
                 nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
                 if len(nexus_images) > 0:
+                    nexus_images_loaded = 0
                     images_window = make_images_window(current_images=False)
                 else:
                     sg.popup('Not a valid Nexusmods mod page.')
@@ -239,6 +257,11 @@ while True:
         window['-LIST-'].update(images)
         images_window.close()
         images_window = None
+    
+    elif event == 'LoadMore':
+        images_window.close()
+        images_window = None
+        images_window = make_images_window(current_images=False)
     
     elif event == 'RemoveCurrent':
         [images.pop(i) for i in reversed(range(len(images))) if images_window[f'Checkbox{i}'].get()]
@@ -258,5 +281,9 @@ while True:
         update_module_images() and \
         update_mod_images() and \
         save_ingredients()
+    
+    elif event == 'ArmorExportFolder':
+        path = os.path.realpath('Armor Export')
+        os.startfile(path)
 
 window.close()
