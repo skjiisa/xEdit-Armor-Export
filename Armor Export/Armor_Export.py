@@ -149,6 +149,10 @@ layout = [
         sg.Button('Clear'),
         sg.Button('Select File')
     ],
+    [sg.Col([
+        [sg.Text('QR codes with background images take a long time to generate.')],
+        [sg.Text('QR codes with backgrounds can be hard to scan. Test before publishing.')]
+    ], visible=False, key='-WARNINGS-')],
     [
         sg.Button('Quit'),
         sg.Button('Open Armor Export folder', key='ArmorExportFolder')
@@ -209,6 +213,7 @@ def save_ingredients():
 while True:
     active_window, event, values = sg.read_all_windows()
     print(event)
+    
     if (event == sg.WINDOW_CLOSED and active_window == window) or event == 'Quit':
         break
 
@@ -297,11 +302,13 @@ while True:
         background_url = values['-URL_INPUT-']
         background_file = None
         window['-BACKGROUND-'].update(background_url)
+        window['-WARNINGS-'].update(visible=True)
     
     elif event == 'Select File':
         background_file = sg.popup_get_file('Background image file', file_types=(('Images', '*.png *.jpg *.jpeg *.bmp *.gif'),))
         background_url = None
         window['-BACKGROUND-'].update(background_file)
+        window['-WARNINGS-'].update(visible=True)
     
     elif event == 'ArmorExportFolder':
         path = os.path.realpath('Armor Export')
