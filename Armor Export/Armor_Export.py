@@ -144,7 +144,11 @@ layout = [
         sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
     [sg.Text('QR Code Background Image')],
-    [sg.Button('Select File'), sg.Input(key='-BACKGROUND-', disabled=True)],
+    [
+        sg.Input(key='-BACKGROUND-', disabled=True), 
+        sg.Button('Clear'),
+        sg.Button('Select File')
+    ],
     [
         sg.Button('Quit'),
         sg.Button('Open Armor Export folder', key='ArmorExportFolder')
@@ -153,6 +157,9 @@ layout = [
 
 window = sg.Window('Armor Export', layout, finalize=True)
 images_window = None
+
+background_url = None
+background_file = None
 
 def update_module_images():
     global images, ingredients
@@ -190,16 +197,14 @@ def save_ingredients():
     except: pass
 
     if window['GenerateQR'].get():
-        myqr.run(ingredients_json, level = 'L', save_dir='Armor Export')
+        myqr.run(ingredients_json, level='L', picture=background_file, colorized=True, save_name='qrcode.png', save_dir='Armor Export')
+        
         qr = Image.open('Armor Export\\qrcode.png')
         img = image_preview(qr)
         bio = BytesIO()
         img.save(bio, format='PNG')
         del img
         window['-PREVIEW-'].update(data=bio.getvalue())
-
-background_url = None
-background_file = None
 
 while True:
     active_window, event, values = sg.read_all_windows()
