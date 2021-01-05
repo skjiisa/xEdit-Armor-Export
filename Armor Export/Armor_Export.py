@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import requests
 import re
 import json
+import os
 from PIL import Image, ImageTk
 from io import BytesIO
 # Must be the MyQR fork at https://github.com/Isvvc/qrcode/
@@ -141,7 +142,10 @@ layout = [
         sg.Button('Both', key='SaveBoth'),
         sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
-    [sg.Button('Quit')]
+    [
+        sg.Button('Quit'),
+        sg.Button('Open Armor Export folder', key='ArmorExportFolder')
+    ]
 ]
 
 window = sg.Window('Armor Export', layout, finalize=True)
@@ -277,5 +281,9 @@ while True:
         update_module_images() and \
         update_mod_images() and \
         save_ingredients()
+    
+    elif event == 'ArmorExportFolder':
+        path = os.path.realpath('Armor Export')
+        os.startfile(path)
 
 window.close()
