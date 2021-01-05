@@ -83,13 +83,16 @@ def make_images_window(current_images):
     if current_images:
         image_links = images
     else:
-        image_links = [image[1] for image in nexus_images[:5]]
-        nexus_images_loaded = 5
+        nexus_images_loaded += 5
+        image_links = [image[1] for image in nexus_images[:nexus_images_loaded]]
     
     col = sg.Column([[
         sg.Checkbox('', key=f'Checkbox{index}'),
         sg.Image(data=image_data(image), enable_events=True, key=f'Image{index}')
-    ] for index, image in enumerate(image_links)], size=(500,1000), scrollable=True)
+    ] for index, image in enumerate(image_links)], size=(500,1000), scrollable=True, vertical_scroll_only=True)
+    
+    if not current_images:
+        col.add_row(sg.Button('Load 5 more', key='LoadMore'))
     
     images_layout = [[
         col,
@@ -223,6 +226,7 @@ while True:
                 html = response.text
                 nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
                 if len(nexus_images) > 0:
+                    nexus_images_loaded = 0
                     images_window = make_images_window(current_images=False)
                 else:
                     sg.popup('Not a valid Nexusmods mod page.')
@@ -239,6 +243,10 @@ while True:
         window['-LIST-'].update(images)
         images_window.close()
         images_window = None
+    
+    elif event == 'LoadMore':
+        images_window.close()
+        images_window = make_images_window(current_images=False)
     
     elif event == 'RemoveCurrent':
         [images.pop(i) for i in reversed(range(len(images))) if images_window[f'Checkbox{i}'].get()]
