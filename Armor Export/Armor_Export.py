@@ -310,6 +310,12 @@ while True:
         window['-BACKGROUND-'].update(background_file)
         window['-WARNINGS-'].update(visible=True)
     
+    elif event == 'Clear':
+        background_file = None
+        background_url = None
+        window['-BACKGROUND-'].update('')
+        window['-WARNINGS-'].update(visible=False)
+    
     elif event == 'ArmorExportFolder':
         path = os.path.realpath('Armor Export')
         os.startfile(path)
