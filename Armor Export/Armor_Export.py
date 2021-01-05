@@ -134,6 +134,7 @@ layout = [
         sg.Button('Add'),
         sg.Button('Preview', key='PreviewInput')
     ],
+    [sg.Button('Set as QR background', key='SetBackground')],
     [sg.Column(images_col), sg.Column(preview_col)],
     [sg.Text("Save images to")],
     [
@@ -142,6 +143,8 @@ layout = [
         sg.Button('Both', key='SaveBoth'),
         sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
+    [sg.Text('QR Code Background Image')],
+    [sg.Button('Select File'), sg.Input(key='-BACKGROUND-', disabled=True)],
     [
         sg.Button('Quit'),
         sg.Button('Open Armor Export folder', key='ArmorExportFolder')
@@ -194,6 +197,9 @@ def save_ingredients():
         img.save(bio, format='PNG')
         del img
         window['-PREVIEW-'].update(data=bio.getvalue())
+
+background_url = None
+background_file = None
 
 while True:
     active_window, event, values = sg.read_all_windows()
@@ -281,6 +287,16 @@ while True:
         update_module_images() and \
         update_mod_images() and \
         save_ingredients()
+    
+    elif event == 'SetBackground':
+        background_url = values['-URL_INPUT-']
+        background_file = None
+        window['-BACKGROUND-'].update(background_url)
+    
+    elif event == 'Select File':
+        background_file = sg.popup_get_file('Background image file', file_types=(('Images', '*.png *.jpg *.jpeg *.bmp *.gif'),))
+        background_url = None
+        window['-BACKGROUND-'].update(background_file)
     
     elif event == 'ArmorExportFolder':
         path = os.path.realpath('Armor Export')
