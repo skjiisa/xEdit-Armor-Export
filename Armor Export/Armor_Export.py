@@ -115,6 +115,9 @@ images_col = [
         sg.Button('Remove selected', key='Remove'),
         sg.Button('Preview selected', key='Preview'),
         sg.Button('Preview all', key='PreviewAll')
+    ],
+    [
+        sg.Button('Set selection as QR background', key='SelectionBackground')
     ]
 ]
 
@@ -128,6 +131,8 @@ layout = [
         sg.Input(key='-NEXUS_INPUT-'),
         sg.Button('Open')
     ],
+    [sg.Text("Link Name")],
+    [sg.Input(key='-LINK_NAME-')],
     [sg.Text("Image URL")],
     [
         sg.Input(key='-URL_INPUT-'),
@@ -143,7 +148,7 @@ layout = [
         sg.Button('Both', key='SaveBoth'),
         sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
-    [sg.Text('QR Code Background Image')],
+    [sg.Text('QR code background image')],
     [
         sg.Input(key='-BACKGROUND-', disabled=True), 
         sg.Button('Clear'),
@@ -164,6 +169,24 @@ images_window = None
 
 background_url = None
 background_file = None
+
+def update_links():
+    global ingredients
+    link_name = window['-LINK_NAME-'].get()
+    url = window['-NEXUS_INPUT-'].get()
+    
+    try:
+        if link_name and url:
+            ingredients['modules'][0]['links'] = [url]
+            ingredients['mods'][0]['links'] = [url]
+            
+            ingredients['link_names'] = [{'id': url, 'name': link_name}]
+        else:
+            ingredients['modules'][0]['links'] = None
+            ingredients['mods'][0]['links'] = None
+    except: pass
+        
+    return True
 
 def update_module_images():
     global images, ingredients
@@ -269,6 +292,16 @@ while True:
                     sg.popup('Not a valid webpage.')
                     continue
                 html = response.text
+                
+                match = re.search('<title>(.*)<\\/title>', html)
+                title = match.group(1)
+                print("aoeu")
+                print(title)
+                link_name = window['-LINK_NAME-'].get()
+                print(len(link_name))
+                if len(title) > 0 and len(link_name) == 0:
+                    window['-LINK_NAME-'].update(title)
+                
                 nexus_images = re.findall('data-src="([^"]*)" data-sub-html="" data-exthumbimage="([^"]*)"', html)
                 if len(nexus_images) > 0:
                     nexus_images_loaded = 0
@@ -302,15 +335,18 @@ while True:
     
     elif event == 'SaveModule':
         update_module_images() and \
+        update_links() and \
         save_ingredients()
     
     elif event == 'SaveMod':
         update_mod_images() and \
+        update_links() and \
         save_ingredients()
     
     elif event == 'SaveBoth':
         update_module_images() and \
         update_mod_images() and \
+        update_links() and \
         save_ingredients()
     
     elif event == 'SetBackground':
@@ -318,6 +354,14 @@ while True:
         background_file = None
         window['-BACKGROUND-'].update(background_url)
         window['-WARNINGS-'].update(visible=True)
+    
+    elif event == 'SelectionBackground':
+        selection = values['-LIST-']
+        if len(selection) > 0:
+            background_url = selection[0]
+            background_file = None
+            window['-BACKGROUND-'].update(background_url)
+            window['-WARNINGS-'].update(visible=True)
     
     elif event == 'Select File':
         background_file = sg.popup_get_file('Background image file', file_types=(('Images', '*.png *.jpg *.jpeg *.bmp *.gif'),))
