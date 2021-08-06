@@ -134,6 +134,7 @@ layout = [
         sg.Button('Add'),
         sg.Button('Preview', key='PreviewInput')
     ],
+    [sg.Button('Set as QR background', key='SetBackground')],
     [sg.Column(images_col), sg.Column(preview_col)],
     [sg.Text("Save images to")],
     [
@@ -142,6 +143,16 @@ layout = [
         sg.Button('Both', key='SaveBoth'),
         sg.Checkbox('Generate QR code', default=True, key='GenerateQR')
     ],
+    [sg.Text('QR Code Background Image')],
+    [
+        sg.Input(key='-BACKGROUND-', disabled=True), 
+        sg.Button('Clear'),
+        sg.Button('Select File')
+    ],
+    [sg.Col([
+        [sg.Text('QR codes with background images take a long time to generate.')],
+        [sg.Text('QR codes with backgrounds can be hard to scan. Test before publishing.')]
+    ], visible=False, key='-WARNINGS-')],
     [
         sg.Button('Quit'),
         sg.Button('Open Armor Export folder', key='ArmorExportFolder')
@@ -150,6 +161,9 @@ layout = [
 
 window = sg.Window('Armor Export', layout, finalize=True)
 images_window = None
+
+background_url = None
+background_file = None
 
 def update_module_images():
     global images, ingredients
@@ -176,7 +190,7 @@ def update_mod_images():
         return False
 
 def save_ingredients():
-    global ingredients, window
+    global ingredients, window, background_url, background_file
     ingredients_json = json.dumps(ingredients)
     
     try:
@@ -187,17 +201,34 @@ def save_ingredients():
     except: pass
 
     if window['GenerateQR'].get():
-        myqr.run(ingredients_json, level = 'L', save_dir='Armor Export')
+        if background_url and not background_file:
+            # Fetch background image
+            try:
+                data = BytesIO(requests.get(background_url).content)
+                img = Image.open(data)
+                path = 'Armor Export\\bg.png'
+                img.save(path)
+                background_file = path
+            except: pass
+        
+        myqr.run(ingredients_json, level='L', picture=background_file, colorized=True, save_name='qrcode.png', save_dir='Armor Export')
+        
         qr = Image.open('Armor Export\\qrcode.png')
         img = image_preview(qr)
         bio = BytesIO()
         img.save(bio, format='PNG')
         del img
         window['-PREVIEW-'].update(data=bio.getvalue())
+        
+        if background_url:
+            # Delete the saved background image
+            try: os.remove('Armor Export\\bg.png')
+            except: pass
 
 while True:
     active_window, event, values = sg.read_all_windows()
     print(event)
+    
     if (event == sg.WINDOW_CLOSED and active_window == window) or event == 'Quit':
         break
 
@@ -281,6 +312,24 @@ while True:
         update_module_images() and \
         update_mod_images() and \
         save_ingredients()
+    
+    elif event == 'SetBackground':
+        background_url = values['-URL_INPUT-']
+        background_file = None
+        window['-BACKGROUND-'].update(background_url)
+        window['-WARNINGS-'].update(visible=True)
+    
+    elif event == 'Select File':
+        background_file = sg.popup_get_file('Background image file', file_types=(('Images', '*.png *.jpg *.jpeg *.bmp *.gif'),))
+        background_url = None
+        window['-BACKGROUND-'].update(background_file)
+        window['-WARNINGS-'].update(visible=True)
+    
+    elif event == 'Clear':
+        background_file = None
+        background_url = None
+        window['-BACKGROUND-'].update('')
+        window['-WARNINGS-'].update(visible=False)
     
     elif event == 'ArmorExportFolder':
         path = os.path.realpath('Armor Export')
