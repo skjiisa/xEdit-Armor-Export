@@ -3,6 +3,7 @@ import requests
 import re
 import json
 import os
+import math
 from PIL import Image, ImageTk
 from io import BytesIO
 # Must be the MyQR fork at https://github.com/Isvvc/qrcode/
@@ -233,8 +234,17 @@ def save_ingredients():
                 img.save(path)
                 background_file = path
             except: pass
-        
-        myqr.run(ingredients_json, level='L', picture=background_file, colorized=True, save_name='qrcode.png', save_dir='Armor Export')
+
+        if len(ingredients_json) > 2953:
+            # Divide JSON into chunks of 2900 characters
+            numCodes = math.ceil(len(ingredients_json) / 2900)
+            sizeEach = len(ingredients_json) / numCodes
+
+            inputs = [f'{index}/{numCodes - 1}\n{ingredients_json[round(index * sizeEach):round((index + 1) * sizeEach)]}' for index in range(numCodes)]
+            print(inputs)
+            [myqr.run(input, level='L', picture=background_file, colorized=True, save_name=f'qrcode{index}.png', save_dir='Armor Export') for index, input in enumerate(inputs)]
+        else:
+            myqr.run(ingredients_json, level='L', picture=background_file, colorized=True, save_name='qrcode.png', save_dir='Armor Export')
         
         qr = Image.open('Armor Export\\qrcode.png')
         img = image_preview(qr)
