@@ -123,7 +123,9 @@ images_col = [
 ]
 
 preview_col = [
-    [sg.Image(key='-PREVIEW-')]
+    [sg.Image(key='-PREVIEW-')],
+    [sg.Text('Mulitple QR codes generated', visible=False, key='-MULTIPLE_QR-')],
+    [sg.Button('Open QR codes folder', key='ArmorExportFolder')]
 ]
 
 layout = [
@@ -160,8 +162,7 @@ layout = [
         [sg.Text('QR codes with backgrounds can be hard to scan. Test before publishing.')]
     ], visible=False, key='-WARNINGS-')],
     [
-        sg.Button('Quit'),
-        sg.Button('Open Armor Export folder', key='ArmorExportFolder')
+        sg.Button('Quit')
     ]
 ]
 
@@ -234,6 +235,9 @@ def save_ingredients():
                 img.save(path)
                 background_file = path
             except: pass
+        
+        # Delete old QR codes
+        [os.remove('Armor Export\\' + file) for file in os.listdir('Armor Export') if re.search('qrcode[0-9]?.png', file)]
 
         if len(ingredients_json) > 2953:
             # Divide JSON into chunks of 2900 characters
@@ -242,16 +246,20 @@ def save_ingredients():
 
             inputs = [f'{index}/{numCodes - 1}\n{ingredients_json[round(index * sizeEach):round((index + 1) * sizeEach)]}' for index in range(numCodes)]
             print(inputs)
-            [myqr.run(input, level='L', picture=background_file, colorized=True, save_name=f'qrcode{index}.png', save_dir='Armor Export') for index, input in enumerate(inputs)]
+            [print('Deleting ' + file); myqr.run(input, level='L', picture=background_file, colorized=True, save_name=f'qrcode{index}.png', save_dir='Armor Export') for index, input in enumerate(inputs)]
+            
+            window['-MULTIPLE_QR-'].update(visible=True)
         else:
             myqr.run(ingredients_json, level='L', picture=background_file, colorized=True, save_name='qrcode.png', save_dir='Armor Export')
-        
-        qr = Image.open('Armor Export\\qrcode.png')
-        img = image_preview(qr)
-        bio = BytesIO()
-        img.save(bio, format='PNG')
-        del img
-        window['-PREVIEW-'].update(data=bio.getvalue())
+            window['-MULTIPLE_QR-'].update(visible=False)
+            
+            # Show the QR code preview
+            qr = Image.open('Armor Export\\qrcode.png')
+            img = image_preview(qr)
+            bio = BytesIO()
+            img.save(bio, format='PNG')
+            del img
+            window['-PREVIEW-'].update(data=bio.getvalue())
         
         if background_url:
             # Delete the saved background image
