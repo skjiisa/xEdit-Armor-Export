@@ -64,11 +64,9 @@ Copy the Python folder (will look something like `python-3.8.6.amd64`) to `Armor
 
 To install dependencies, navigate to the xEdit directory in Command Prompt and run the following command:
 
-	"Armor Export\Python\python.exe" -m pip install -r requirements.txt
+	Python38\python.exe -m pip install -r requirements.txt
 
-You should now be able to access the UI from the xEdit script or by running:
-
-	"Armor Export\Python\python.exe" "Armor Export\Armor_Export.py"
+You should now be able to access the UI from the xEdit script or by running `run.bat`.
 
 Note that you must run this from the xEdit directory, not the `Armor Export` directory, or the relative file paths will be wrong.
 
