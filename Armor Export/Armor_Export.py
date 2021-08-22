@@ -246,7 +246,7 @@ def save_ingredients():
 
             inputs = [f'{index}/{numCodes - 1}\n{ingredients_json[round(index * sizeEach):round((index + 1) * sizeEach)]}' for index in range(numCodes)]
             print(inputs)
-            [print('Deleting ' + file); myqr.run(input, level='L', picture=background_file, colorized=True, save_name=f'qrcode{index}.png', save_dir='Armor Export') for index, input in enumerate(inputs)]
+            [myqr.run(input, level='L', picture=background_file, colorized=True, save_name=f'qrcode{index}.png', save_dir='Armor Export') for index, input in enumerate(inputs)]
             
             window['-MULTIPLE_QR-'].update(visible=True)
         else:
