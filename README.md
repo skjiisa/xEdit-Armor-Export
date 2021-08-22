@@ -36,15 +36,13 @@ It is still totally usable without it, though.
 	+ Calculated level based on type and rating
 	+ JSON that can be imported into Character Tracker
 	+ A QR code that can be scanned into Character Tracker if `myqr.exe` is present.
-1. A GUI will launch for adding images and generating QR codes.
+1. A GUI will launch for adding images and URL and for generating QR codes.
 	+ Manually add images with the **Image URL** text box
 	+ Enter a Nexusmods mod page in the **Nexusmods URL** text box to select images from the mod page to load.
-		+ Currently only the first 5 images will load.
 		+ Adult-only mod pages will not load as they require a user to be signed in, and this does not currently support signing in to an account.
+		+ The URL entered here along with the title in "Link Name" will be saved to both the mod and module.
 	+ When you have the images inputted that you'd like, click any of the **Save images to** buttons to save the images to the `Ingredients.json` file.
 		+ Check **Generate QR code** to generate a QR code that can be scanned into Character Tracker.
-	+ Note that this GUI is in early stages and can crash if text fields are left blank.
-		+ Generating QR codes with no images, however, should work just fine.
 
 ## Build
 
@@ -66,11 +64,9 @@ Copy the Python folder (will look something like `python-3.8.6.amd64`) to `Armor
 
 To install dependencies, navigate to the xEdit directory in Command Prompt and run the following command:
 
-	"Armor Export\Python\python.exe" -m pip install -r requirements.txt
+	Python38\python.exe -m pip install -r requirements.txt
 
-You should now be able to access the UI from the xEdit script or by running:
-
-	"Armor Export\Python\python.exe" "Armor Export\Armor_Export.py"
+You should now be able to access the UI from the xEdit script or by running `run.bat`.
 
 Note that you must run this from the xEdit directory, not the `Armor Export` directory, or the relative file paths will be wrong.
 
@@ -78,7 +74,6 @@ Note that you must run this from the xEdit directory, not the `Armor Export` dir
 
 [Isvvc/qrcode](https://github.com/Isvvc/qrcode/) is required to generate QR codes.
 This is a slightly modified version of [sylnsfar/qrcode](https://github.com/sylnsfar/qrcode).
-The changes I made were simply adding `"` to the supported characters list so it could encode JSON
-and allowing it to read input from a file so long JSON could be passed in without having to try to pass it as an argument.
-
-Unlike previous releases, there is no `exe` file to generate. The included `python.exe` is run directly.
+The changes I made were
+1. adding `"` and the line break character to the supported characters list so it could encode JSON and
+1. allowing it to read input from a file so long JSON could be passed in without having to try to pass it as an argument.
